@@ -15,7 +15,6 @@ func SqlMockTest(t *testing.T) (*sql.DB, sqlmock.Sqlmock, error) {
 			cleanExpected := strings.TrimSuffix(strings.TrimSpace(strings.ToLower(expectedSQL)), ";")
 			cleanActual := strings.TrimSuffix(strings.TrimSpace(strings.ToLower(actualSQL)), ";")
 
-			// 3. Схлопываем множественные пробелы и переносы строк в один пробел
 			cleanExpected = strings.Join(strings.Fields(cleanExpected), " ")
 			cleanActual = strings.Join(strings.Fields(cleanActual), " ")
 
