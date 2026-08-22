@@ -36,10 +36,6 @@ func readConfig() (config, error) {
 		return cfg, err
 	}
 
-	//if cfg.SecretKey == "" {
-	//	return config{}, errors.New("secret_key required")
-	//}
-
 	return cfg, nil
 }
 

@@ -54,6 +54,9 @@ func (h *handler) RegisterUser(w http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	// для тестов
+	w.Header().Set("Authorization", "Bearer "+tokenJWT)
+
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]string{
 		"token": tokenJWT,
