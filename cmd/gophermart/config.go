@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"os"
 
@@ -37,9 +36,9 @@ func readConfig() (config, error) {
 		return cfg, err
 	}
 
-	if cfg.SecretKey == "" {
-		return config{}, errors.New("secret_key required")
-	}
+	//if cfg.SecretKey == "" {
+	//	return config{}, errors.New("secret_key required")
+	//}
 
 	return cfg, nil
 }
