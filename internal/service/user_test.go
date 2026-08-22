@@ -48,7 +48,7 @@ func Test_validate(t *testing.T) {
 
 		assert.Equal(t, &entities.DomainError{
 			ErrorType: entities.BadRequestErrorType,
-			Text:      "login: Поле должно содержать не менее 3 символов,password: Поле должно содержать не менее 8 символов",
+			Text:      "login: Поле должно содержать не менее 4 символов,password: Поле должно содержать не менее 8 символов",
 		}, err)
 	})
 
@@ -59,14 +59,14 @@ func Test_validate(t *testing.T) {
 
 		user := forms.UserForm{
 			Login:    strings.Repeat("1", 21),
-			Password: strings.Repeat("2", 21),
+			Password: strings.Repeat("2", 33),
 		}
 
 		err := service.validateRegister(t.Context(), user)
 
 		assert.Equal(t, &entities.DomainError{
 			ErrorType: entities.BadRequestErrorType,
-			Text:      "login: Поле должно содержать не более 20 символов,password: Поле должно содержать не более 20 символов",
+			Text:      "login: Поле должно содержать не более 20 символов,password: Поле должно содержать не более 32 символов",
 		}, err)
 	})
 

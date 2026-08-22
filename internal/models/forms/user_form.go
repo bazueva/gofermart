@@ -1,6 +1,6 @@
 package forms
 
 type UserForm struct {
-	Login    string `validate:"required,min=3,max=20"`
-	Password string `validate:"required,min=8,max=20"`
+	Login    string `validate:"required,min=4,max=20"`
+	Password string `validate:"required,min=8,max=32"`
 }
