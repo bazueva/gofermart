@@ -3,8 +3,15 @@ package main
 import (
 	"database/sql"
 	"log"
+	"net/http"
 
 	dbpkg "github.com/bazueva/gofermart/db"
+	"github.com/bazueva/gofermart/internal/app"
+	handlerPkg "github.com/bazueva/gofermart/internal/handler"
+	"github.com/bazueva/gofermart/internal/middleware"
+	"github.com/bazueva/gofermart/internal/repository/db/user"
+	"github.com/bazueva/gofermart/internal/service"
+	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 )
@@ -42,4 +49,28 @@ func main() {
 		}
 	}
 
+	startServer(cfg, db)
+}
+
+func startServer(cfg config, db *sql.DB) {
+	userRepository := user.NewRepository(db, cfg.logger)
+
+	userService := service.NewUserService(userRepository, cfg.logger, cfg.SecretKey)
+
+	var application = app.NewApp(userService)
+	handler := handlerPkg.NewHandler(cfg.logger, application)
+
+	router := chi.NewRouter()
+	router.Use(middleware.ServerLogger(cfg.logger))
+
+	router.Post("/api/user/register", handler.RegisterUser)
+
+	server := &http.Server{
+		Addr:    cfg.ServerAddr.String(),
+		Handler: router,
+	}
+
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		cfg.logger.Error("Ошибка сервера", zap.Error(err))
+	}
 }

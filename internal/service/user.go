@@ -1,0 +1,141 @@
+package service
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/bazueva/gofermart/internal/domain/entities"
+	"github.com/bazueva/gofermart/internal/interfaces"
+	"github.com/bazueva/gofermart/internal/models/forms"
+	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/samber/lo"
+	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
+)
+
+/*
+*
+Сервис для работы с пользователями:
+1) регистрация
+2) аутентификация
+*/
+
+type Repository interface {
+	ExistLogin(ctx context.Context, login string) (bool, *entities.DomainError)
+	CreateUser(ctx context.Context, user entities.User) (int32, *entities.DomainError)
+}
+
+type userService struct {
+	repository    Repository
+	formValidator *validator.Validate
+	logger        interfaces.Logger
+	secretKey     string
+}
+
+func (u *userService) Register(ctx context.Context, userForm forms.UserForm) (string, *entities.DomainError) {
+	errDomain := u.validateRegister(ctx, userForm)
+	if errDomain != nil {
+		return "", errDomain
+	}
+
+	userID, errDomain := u.createUser(ctx, userForm)
+	if errDomain != nil {
+		return "", errDomain
+	}
+
+	token, err := u.generateJWTToken(userID)
+	if err != nil {
+		u.logger.Error("error generateJWTToken", zap.Error(err))
+
+		return "", entities.NewInternalServerError(err, "")
+	}
+
+	return token, nil
+}
+
+func (u *userService) validateRegister(ctx context.Context, userForm forms.UserForm) *entities.DomainError {
+	err := u.formValidator.Struct(userForm)
+
+	validationErrors := entities.ConvertValidatorErrors(err)
+	if len(validationErrors) > 0 {
+		errorsResult := lo.Map(validationErrors, func(item entities.ValidateError, index int) string {
+			return fmt.Sprintf("%s: %s", item.Field, item.Error)
+		})
+
+		return entities.NewBadRequestError(nil, strings.Join(errorsResult, ","))
+	}
+
+	exists, errDomain := u.checkUniqueLogin(ctx, userForm.Login)
+	if err != nil {
+		return errDomain
+	}
+
+	if exists {
+		return entities.NewConflictError(nil, "Такой login уже существует")
+	}
+
+	return nil
+}
+
+func (u *userService) checkUniqueLogin(ctx context.Context, login string) (bool, *entities.DomainError) {
+	exist, err := u.repository.ExistLogin(ctx, login)
+	if err != nil {
+		return false, err
+	}
+
+	return exist, nil
+}
+
+func (u *userService) createUser(ctx context.Context, userForm forms.UserForm) (int32, *entities.DomainError) {
+	hashPass, err := hashPassword(userForm.Password)
+	if err != nil {
+		u.logger.Error("error hash password", zap.Error(err))
+
+		return 0, entities.NewInternalServerError(err, "")
+	}
+
+	userID, errDomain := u.repository.CreateUser(ctx, entities.User{
+		Login:    userForm.Login,
+		Password: hashPass,
+	})
+	if errDomain != nil {
+		return 0, errDomain
+	}
+
+	return userID, nil
+}
+
+func (u *userService) generateJWTToken(userID int32) (string, error) {
+	claims := jwt.MapClaims{
+		"user_id": userID,
+		"exp":     time.Now().Add(24 * time.Hour).Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(u.secretKey))
+
+	return tokenString, err
+}
+
+func NewUserService(repository Repository, logger interfaces.Logger, secretKey string) *userService {
+	service := &userService{
+		logger:        logger,
+		repository:    repository,
+		formValidator: validator.New(validator.WithRequiredStructEnabled()),
+		secretKey:     secretKey,
+	}
+
+	return service
+}
+
+func hashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+
+	return string(hash), nil
+}

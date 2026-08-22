@@ -1,0 +1,12 @@
+all: false
+dir: '{{.InterfaceDir}}/mocks'
+filename: 'mock_{{.InterfaceName| snakecase}}.gen.go'
+structname: '{{.Mock}}{{.InterfaceName}}'
+pkgname: 'mocks'
+packages:
+  github.com/bazueva/gofermart/internal/service:
+    config:
+      all: true
+  github.com/bazueva/gofermart/internal/interfaces:
+    config:
+      all: true
