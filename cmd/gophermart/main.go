@@ -22,7 +22,7 @@ func main() {
 		panic(err)
 	}
 
-	cfg.logger, err = zap.NewProduction()
+	cfg.logger, err = zap.NewProduction(zap.AddStacktrace(zap.ErrorLevel))
 	if err != nil {
 		panic(err)
 	}
@@ -62,8 +62,10 @@ func startServer(cfg config, db *sql.DB) {
 
 	router := chi.NewRouter()
 	router.Use(middleware.ServerLogger(cfg.logger))
+	router.Use(middleware.JSONMiddleware)
 
 	router.Post("/api/user/register", handler.RegisterUser)
+	router.Post("/api/user/login", handler.LoginUser)
 
 	server := &http.Server{
 		Addr:    cfg.ServerAddr.String(),

@@ -173,3 +173,71 @@ func (_c *MockRepository_ExistLogin_Call) RunAndReturn(run func(ctx context.Cont
 	_c.Call.Return(run)
 	return _c
 }
+
+// FindByLogin provides a mock function for the type MockRepository
+func (_mock *MockRepository) FindByLogin(ctx context.Context, login string) (entities.User, *entities.DomainError) {
+	ret := _mock.Called(ctx, login)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByLogin")
+	}
+
+	var r0 entities.User
+	var r1 *entities.DomainError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (entities.User, *entities.DomainError)); ok {
+		return returnFunc(ctx, login)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) entities.User); ok {
+		r0 = returnFunc(ctx, login)
+	} else {
+		r0 = ret.Get(0).(entities.User)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *entities.DomainError); ok {
+		r1 = returnFunc(ctx, login)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*entities.DomainError)
+		}
+	}
+	return r0, r1
+}
+
+// MockRepository_FindByLogin_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByLogin'
+type MockRepository_FindByLogin_Call struct {
+	*mock.Call
+}
+
+// FindByLogin is a helper method to define mock.On call
+//   - ctx context.Context
+//   - login string
+func (_e *MockRepository_Expecter) FindByLogin(ctx any, login any) *MockRepository_FindByLogin_Call {
+	return &MockRepository_FindByLogin_Call{Call: _e.mock.On("FindByLogin", ctx, login)}
+}
+
+func (_c *MockRepository_FindByLogin_Call) Run(run func(ctx context.Context, login string)) *MockRepository_FindByLogin_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepository_FindByLogin_Call) Return(user entities.User, domainError *entities.DomainError) *MockRepository_FindByLogin_Call {
+	_c.Call.Return(user, domainError)
+	return _c
+}
+
+func (_c *MockRepository_FindByLogin_Call) RunAndReturn(run func(ctx context.Context, login string) (entities.User, *entities.DomainError)) *MockRepository_FindByLogin_Call {
+	_c.Call.Return(run)
+	return _c
+}

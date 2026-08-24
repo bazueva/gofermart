@@ -26,6 +26,7 @@ import (
 type Repository interface {
 	ExistLogin(ctx context.Context, login string) (bool, *entities.DomainError)
 	CreateUser(ctx context.Context, user entities.User) (int32, *entities.DomainError)
+	FindByLogin(ctx context.Context, login string) (entities.User, *entities.DomainError)
 }
 
 type userService struct {
@@ -33,6 +34,36 @@ type userService struct {
 	formValidator *validator.Validate
 	logger        interfaces.Logger
 	secretKey     string
+}
+
+func (u *userService) Login(ctx context.Context, loginForm forms.LoginForm) (string, *entities.DomainError) {
+	errDomain := u.validateForm(loginForm)
+	if errDomain != nil {
+		return "", errDomain
+	}
+
+	user, errDomain := u.repository.FindByLogin(ctx, loginForm.Login)
+	if errDomain != nil {
+		return "", errDomain
+	}
+
+	if user.ID == 0 {
+		return "", entities.NewUnauthorizedError(nil, "неверная пара логин/пароль")
+	}
+
+	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(loginForm.Password))
+	if err != nil {
+		return "", entities.NewUnauthorizedError(nil, "неверная пара логин/пароль")
+	}
+
+	token, err := u.generateJWTToken(user.ID)
+	if err != nil {
+		u.logger.Error("error generateJWTToken", zap.Error(err))
+
+		return "", entities.NewInternalServerError(err, "")
+	}
+
+	return token, nil
 }
 
 func (u *userService) Register(ctx context.Context, userForm forms.UserForm) (string, *entities.DomainError) {
@@ -56,8 +87,8 @@ func (u *userService) Register(ctx context.Context, userForm forms.UserForm) (st
 	return token, nil
 }
 
-func (u *userService) validateRegister(ctx context.Context, userForm forms.UserForm) *entities.DomainError {
-	err := u.formValidator.Struct(userForm)
+func (u *userService) validateForm(form interface{}) *entities.DomainError {
+	err := u.formValidator.Struct(form)
 
 	validationErrors := entities.ConvertValidatorErrors(err)
 	if len(validationErrors) > 0 {
@@ -68,8 +99,17 @@ func (u *userService) validateRegister(ctx context.Context, userForm forms.UserF
 		return entities.NewBadRequestError(nil, strings.Join(errorsResult, ","))
 	}
 
+	return nil
+}
+
+func (u *userService) validateRegister(ctx context.Context, userForm forms.UserForm) *entities.DomainError {
+	errDomain := u.validateForm(userForm)
+	if errDomain != nil {
+		return errDomain
+	}
+
 	exists, errDomain := u.checkUniqueLogin(ctx, userForm.Login)
-	if err != nil {
+	if errDomain != nil {
 		return errDomain
 	}
 
@@ -98,8 +138,8 @@ func (u *userService) createUser(ctx context.Context, userForm forms.UserForm) (
 	}
 
 	userID, errDomain := u.repository.CreateUser(ctx, entities.User{
-		Login:    userForm.Login,
-		Password: hashPass,
+		Login:        userForm.Login,
+		PasswordHash: hashPass,
 	})
 	if errDomain != nil {
 		return 0, errDomain

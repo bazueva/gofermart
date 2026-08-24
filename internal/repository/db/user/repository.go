@@ -2,18 +2,42 @@ package user
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/bazueva/gofermart/internal/domain/entities"
 	"github.com/bazueva/gofermart/internal/interfaces"
+	"github.com/bazueva/gofermart/internal/repository/db/user/queries"
+	"github.com/bazueva/gofermart/schema.gen/gofermart/public/model"
 	"github.com/bazueva/gofermart/schema.gen/gofermart/public/table"
-	"github.com/go-jet/jet/v2/postgres"
+	"github.com/go-jet/jet/v2/qrm"
 	"go.uber.org/zap"
 )
 
 type repository struct {
 	db     interfaces.DB
 	logger interfaces.Logger
+}
+
+func (r *repository) FindByLogin(ctx context.Context, login string) (entities.User, *entities.DomainError) {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	var result model.Users
+
+	err := queries.NewFindByLogin(login).
+		QueryContext(ctxWithTimeout, r.db, &result)
+	if err != nil && !errors.Is(err, qrm.ErrNoRows) {
+		r.logger.Error("error repository FindByLoginPassword", zap.Error(err))
+
+		return entities.User{}, entities.NewInternalServerError(err, "")
+	}
+
+	return entities.User{
+		ID:           result.ID,
+		Login:        result.Login,
+		PasswordHash: result.PasswordHash,
+	}, nil
 }
 
 const (
@@ -25,8 +49,8 @@ func (r *repository) CreateUser(ctx context.Context, user entities.User) (int32,
 	defer cancel()
 
 	query := table.Users.
-		INSERT(table.Users.Login, table.Users.Password).
-		VALUES(user.Login, user.Password).
+		INSERT(table.Users.Login, table.Users.PasswordHash).
+		VALUES(user.Login, user.PasswordHash).
 		RETURNING(table.Users.ID.AS("id"))
 
 	var result struct {
@@ -46,20 +70,11 @@ func (r *repository) ExistLogin(ctx context.Context, login string) (bool, *entit
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
-	query := postgres.SELECT(
-		postgres.EXISTS(
-			postgres.SELECT(
-				table.Users.Login,
-			).
-				FROM(table.Users).
-				WHERE(table.Users.Login.EQ(postgres.String(login))),
-		).AS("exists"),
-	)
-
 	var response struct {
 		Exists bool
 	}
-	err := query.QueryContext(ctxWithTimeout, r.db, &response)
+	err := queries.NewExistLogin(login).
+		QueryContext(ctxWithTimeout, r.db, &response)
 	if err != nil {
 		r.logger.Error("error ExistLogin", zap.Error(err))
 

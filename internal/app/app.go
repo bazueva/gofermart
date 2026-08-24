@@ -14,10 +14,24 @@ import (
 
 type UserService interface {
 	Register(ctx context.Context, user forms.UserForm) (string, *entities.DomainError)
+	Login(ctx context.Context, user forms.LoginForm) (string, *entities.DomainError)
 }
 
 type app struct {
 	userService UserService
+}
+
+func (a *app) Login(ctx context.Context, request models.LoginRequest) (string, *entities.DomainError) {
+	tokenJWT, err := a.userService.Login(ctx, forms.LoginForm{
+		Login:    request.Login,
+		Password: request.Password,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return tokenJWT, nil
 }
 
 // Регистрация производится по паре логин/пароль. Каждый логин должен быть уникальным.

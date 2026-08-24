@@ -16,6 +16,7 @@ const (
 	InternalServerErrorType ErrorType = iota
 	ConflictErrorType
 	BadRequestErrorType
+	UnauthorizedErrorType
 )
 
 func (e *DomainError) Error() string {
@@ -27,6 +28,14 @@ func NewInternalServerError(err error, text string) *DomainError {
 		ErrorType: InternalServerErrorType,
 		SourceErr: err,
 		Text:      lo.Ternary(text != "", text, "Internal Server Error"),
+	}
+}
+
+func NewUnauthorizedError(err error, text string) *DomainError {
+	return &DomainError{
+		ErrorType: UnauthorizedErrorType,
+		SourceErr: err,
+		Text:      text,
 	}
 }
 

@@ -19,7 +19,7 @@ type usersTable struct {
 	// Columns
 	ID            postgres.ColumnInteger
 	Login         postgres.ColumnString
-	Password      postgres.ColumnString
+	PasswordHash  postgres.ColumnString
 	CreatedAt     postgres.ColumnTimestampz
 	UpdatedAt     postgres.ColumnTimestampz
 	LastVisitedAt postgres.ColumnTimestampz
@@ -66,12 +66,12 @@ func newUsersTableImpl(schemaName, tableName, alias string) usersTable {
 	var (
 		IDColumn            = postgres.IntegerColumn("id")
 		LoginColumn         = postgres.StringColumn("login")
-		PasswordColumn      = postgres.StringColumn("password")
+		PasswordHashColumn  = postgres.StringColumn("password_hash")
 		CreatedAtColumn     = postgres.TimestampzColumn("created_at")
 		UpdatedAtColumn     = postgres.TimestampzColumn("updated_at")
 		LastVisitedAtColumn = postgres.TimestampzColumn("last_visited_at")
-		allColumns          = postgres.ColumnList{IDColumn, LoginColumn, PasswordColumn, CreatedAtColumn, UpdatedAtColumn, LastVisitedAtColumn}
-		mutableColumns      = postgres.ColumnList{LoginColumn, PasswordColumn, CreatedAtColumn, UpdatedAtColumn, LastVisitedAtColumn}
+		allColumns          = postgres.ColumnList{IDColumn, LoginColumn, PasswordHashColumn, CreatedAtColumn, UpdatedAtColumn, LastVisitedAtColumn}
+		mutableColumns      = postgres.ColumnList{LoginColumn, PasswordHashColumn, CreatedAtColumn, UpdatedAtColumn, LastVisitedAtColumn}
 		defaultColumns      = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, LastVisitedAtColumn}
 	)
 
@@ -81,7 +81,7 @@ func newUsersTableImpl(schemaName, tableName, alias string) usersTable {
 		//Columns
 		ID:            IDColumn,
 		Login:         LoginColumn,
-		Password:      PasswordColumn,
+		PasswordHash:  PasswordHashColumn,
 		CreatedAt:     CreatedAtColumn,
 		UpdatedAt:     UpdatedAtColumn,
 		LastVisitedAt: LastVisitedAtColumn,
