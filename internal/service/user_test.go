@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func Test_validate(t *testing.T) {
@@ -253,5 +254,167 @@ func TestUserService_generateJWTToken(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.NotEqual(t, token1, token2)
+	})
+}
+
+func TestUserService_Login(t *testing.T) {
+	t.Parallel()
+
+	correctPassword := "correctPassword123"
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(correctPassword), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("success login", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+		mockRepo.EXPECT().
+			FindByLogin(mock.Anything, "testuser").
+			Return(entities.User{
+				ID:           1,
+				Login:        "testuser",
+				PasswordHash: string(hashedPassword),
+			}, nil)
+
+		logger := interfacesMocks.NewMockLogger(t)
+
+		service := NewUserService(mockRepo, logger, "test-secret-key")
+
+		loginForm := forms.LoginForm{
+			Login:    "testuser",
+			Password: correctPassword,
+		}
+
+		token, err := service.Login(t.Context(), loginForm)
+
+		assert.Nil(t, err)
+		assert.NotEmpty(t, token)
+	})
+
+	t.Run("empty login", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+
+		logger := interfacesMocks.NewMockLogger(t)
+		service := NewUserService(mockRepo, logger, "test-secret-key")
+
+		loginForm := forms.LoginForm{
+			Login:    "",
+			Password: "password123",
+		}
+
+		token, err := service.Login(t.Context(), loginForm)
+
+		assert.Empty(t, token)
+		assert.Equal(t, &entities.DomainError{
+			ErrorType: entities.BadRequestErrorType,
+			Text:      "login: Поле обязательно для заполнения",
+		}, err)
+	})
+
+	t.Run("empty password", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+
+		logger := interfacesMocks.NewMockLogger(t)
+		service := NewUserService(mockRepo, logger, "test-secret-key")
+
+		loginForm := forms.LoginForm{
+			Login:    "testuser",
+			Password: "",
+		}
+
+		token, err := service.Login(t.Context(), loginForm)
+
+		assert.Empty(t, token)
+		assert.Equal(t, &entities.DomainError{
+			ErrorType: entities.BadRequestErrorType,
+			Text:      "password: Поле обязательно для заполнения",
+		}, err)
+	})
+
+	t.Run("error findLogin", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+		mockRepo.EXPECT().
+			FindByLogin(mock.Anything, "nonexistent").
+			Return(entities.User{}, entities.NewInternalServerError(nil, ""))
+
+		logger := interfacesMocks.NewMockLogger(t)
+
+		service := NewUserService(mockRepo, logger, "test-secret-key")
+
+		loginForm := forms.LoginForm{
+			Login:    "nonexistent",
+			Password: "password123",
+		}
+
+		token, err := service.Login(t.Context(), loginForm)
+
+		assert.Empty(t, token)
+		assert.Equal(t, &entities.DomainError{
+			ErrorType: entities.InternalServerErrorType,
+			Text:      "Internal Server Error",
+		}, err)
+	})
+
+	t.Run("user not found", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+		mockRepo.EXPECT().
+			FindByLogin(mock.Anything, "nonexistent").
+			Return(entities.User{}, nil)
+
+		logger := interfacesMocks.NewMockLogger(t)
+
+		service := NewUserService(mockRepo, logger, "test-secret-key")
+
+		loginForm := forms.LoginForm{
+			Login:    "nonexistent",
+			Password: "password123",
+		}
+
+		token, err := service.Login(t.Context(), loginForm)
+
+		assert.Empty(t, token)
+		assert.Equal(t, &entities.DomainError{
+			ErrorType: entities.UnauthorizedErrorType,
+			Text:      "неверная пара логин/пароль",
+		}, err)
+	})
+
+	t.Run("wrong password", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+		mockRepo.EXPECT().
+			FindByLogin(mock.Anything, "testuser").
+			Return(entities.User{
+				ID:           1,
+				Login:        "testuser",
+				PasswordHash: string(hashedPassword),
+			}, nil)
+
+		logger := interfacesMocks.NewMockLogger(t)
+		service := NewUserService(mockRepo, logger, "test-secret-key")
+
+		loginForm := forms.LoginForm{
+			Login:    "testuser",
+			Password: "wrongPassword",
+		}
+
+		token, err := service.Login(t.Context(), loginForm)
+
+		assert.Empty(t, token)
+		assert.Equal(t, &entities.DomainError{
+			ErrorType: entities.UnauthorizedErrorType,
+			Text:      "неверная пара логин/пароль",
+		}, err)
 	})
 }

@@ -1,6 +1,7 @@
 package entities
 
 type User struct {
-	Login    string
-	Password string
+	ID           int32
+	Login        string
+	PasswordHash string
 }

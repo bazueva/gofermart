@@ -161,14 +161,14 @@ func TestRepository_CreateUser(t *testing.T) {
 		ctx := t.Context()
 
 		user := entities.User{
-			Login:    "testuser",
-			Password: "password",
+			Login:        "testuser",
+			PasswordHash: "password",
 		}
 
-		expectedSQL := `INSERT INTO public.users (login, password) VALUES ($1, $2) RETURNING users.id AS "id";`
+		expectedSQL := `INSERT INTO public.users (login, password_hash) VALUES ($1, $2) RETURNING users.id AS "id";`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(user.Login, user.Password).
+			WithArgs(user.Login, user.PasswordHash).
 			WillReturnRows(sqlmock.NewRows([]string{"id"}).
 				AddRow(100))
 
@@ -193,14 +193,14 @@ func TestRepository_CreateUser(t *testing.T) {
 		ctx := t.Context()
 
 		user := entities.User{
-			Login:    "testuser",
-			Password: "password",
+			Login:        "testuser",
+			PasswordHash: "password",
 		}
 
-		expectedSQL := `INSERT INTO public.users (login, password) VALUES ($1, $2) RETURNING users.id AS "id";`
+		expectedSQL := `INSERT INTO public.users (login, password_hash) VALUES ($1, $2) RETURNING users.id AS "id";`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(user.Login, user.Password).
+			WithArgs(user.Login, user.PasswordHash).
 			WillReturnError(errors.New("connection refused"))
 
 		userID, err := repo.CreateUser(ctx, user)
@@ -229,14 +229,14 @@ func TestRepository_CreateUser(t *testing.T) {
 		cancel()
 
 		user := entities.User{
-			Login:    "testuser",
-			Password: "hashed_password",
+			Login:        "testuser",
+			PasswordHash: "hashed_password",
 		}
 
 		expectedSQL := `INSERT INTO public.users (login, password) VALUES ($1, $2);`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(user.Login, user.Password).
+			WithArgs(user.Login, user.PasswordHash).
 			WillReturnError(context.DeadlineExceeded)
 
 		userID, err := repo.CreateUser(ctx, user)
@@ -246,5 +246,106 @@ func TestRepository_CreateUser(t *testing.T) {
 		assert.IsType(t, &entities.DomainError{}, err)
 		assert.Equal(t, err.(*entities.DomainError).ErrorType, entities.InternalServerErrorType)
 		assert.Equal(t, "jet: context canceled", err.(*entities.DomainError).SourceErr.Error())
+	})
+}
+
+func TestRepository_FindByLogin(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - user found", func(t *testing.T) {
+		t.Parallel()
+
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer db.Close()
+
+		logger := mocks.NewMockLogger(t)
+		repo := NewRepository(db, logger)
+		ctx := t.Context()
+
+		expectedSQL := `SELECT users.id AS "users.id",
+             users.login AS "users.login",
+             users.password_hash AS "users.password_hash"
+        FROM public.users
+        WHERE (users.login = $1::text)
+        LIMIT $2;`
+
+		mock.ExpectQuery(expectedSQL).
+			WithArgs("testuser", 1).
+			WillReturnRows(sqlmock.NewRows([]string{"users.id", "users.login", "users.password_hash"}).
+				AddRow(123, "testuser", "hashed_password"))
+
+		user, domainErr := repo.FindByLogin(ctx, "testuser")
+
+		assert.Nil(t, domainErr)
+		assert.Equal(t, int32(123), user.ID)
+		assert.Equal(t, "testuser", user.Login)
+		assert.Equal(t, "hashed_password", user.PasswordHash)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("user not found - returns empty user", func(t *testing.T) {
+		t.Parallel()
+
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer db.Close()
+
+		logger := mocks.NewMockLogger(t)
+		repo := NewRepository(db, logger)
+		ctx := t.Context()
+
+		expectedSQL := `SELECT users.id AS "users.id",
+             users.login AS "users.login",
+             users.password_hash AS "users.password_hash"
+        FROM public.users
+        WHERE (users.login = $1::text)
+        LIMIT $2;`
+
+		mock.ExpectQuery(expectedSQL).
+			WithArgs("nonexistent", 1).
+			WillReturnRows(sqlmock.NewRows([]string{"users.id", "users.login", "users.password_hash"}))
+
+		user, domainErr := repo.FindByLogin(ctx, "nonexistent")
+
+		assert.Nil(t, domainErr)
+		assert.Equal(t, int32(0), user.ID)
+		assert.Empty(t, user.Login)
+		assert.Empty(t, user.PasswordHash)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("database error - returns internal error", func(t *testing.T) {
+		t.Parallel()
+
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer db.Close()
+
+		logger := mocks.NewMockLogger(t)
+		logger.EXPECT().Error("error repository FindByLoginPassword", mock2.Anything)
+
+		repo := NewRepository(db, logger)
+		ctx := t.Context()
+
+		expectedSQL := `SELECT users.id AS "users.id",
+             users.login AS "users.login",
+             users.password_hash AS "users.password_hash"
+        FROM public.users
+        WHERE (users.login = $1::text)
+        LIMIT $2;`
+
+		mock.ExpectQuery(expectedSQL).
+			WithArgs("testuser", 1).
+			WillReturnError(errors.New("connection refused"))
+
+		user, domainErr := repo.FindByLogin(ctx, "testuser")
+
+		assert.Error(t, domainErr)
+		assert.Equal(t, entities.InternalServerErrorType, domainErr.ErrorType)
+		assert.Equal(t, int32(0), user.ID)
+		assert.Empty(t, user.Login)
+		assert.Empty(t, user.PasswordHash)
+		assert.NoError(t, mock.ExpectationsWereMet())
 	})
 }
