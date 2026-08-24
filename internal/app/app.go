@@ -15,10 +15,20 @@ import (
 type UserService interface {
 	Register(ctx context.Context, user forms.UserForm) (string, *entities.DomainError)
 	Login(ctx context.Context, user forms.LoginForm) (string, *entities.DomainError)
+	CheckJWTToken(token string) (int32, *entities.DomainError)
 }
 
 type app struct {
 	userService UserService
+}
+
+func (a *app) CheckJWTToken(token string) (int32, *entities.DomainError) {
+	userID, err := a.userService.CheckJWTToken(token)
+	if err != nil {
+		return 0, err
+	}
+
+	return userID, nil
 }
 
 func (a *app) Login(ctx context.Context, request models.LoginRequest) (string, *entities.DomainError) {

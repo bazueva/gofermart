@@ -10,3 +10,6 @@ packages:
   github.com/bazueva/gofermart/internal/interfaces:
     config:
       all: true
+  github.com/bazueva/gofermart/internal/middleware:
+    config:
+      all: true

@@ -67,6 +67,12 @@ func startServer(cfg config, db *sql.DB) {
 	router.Post("/api/user/register", handler.RegisterUser)
 	router.Post("/api/user/login", handler.LoginUser)
 
+	router.Group(func(r chi.Router) {
+		r.Use(middleware.Authorization(application, cfg.logger))
+
+		r.Post("/api/user/orders", handler.CreateOrder)
+	})
+
 	server := &http.Server{
 		Addr:    cfg.ServerAddr.String(),
 		Handler: router,
