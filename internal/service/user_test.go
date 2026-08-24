@@ -418,3 +418,163 @@ func TestUserService_Login(t *testing.T) {
 		}, err)
 	})
 }
+
+func TestUserService_CheckJWTToken(t *testing.T) {
+	t.Parallel()
+
+	secretKey := "test-secret-key"
+
+	t.Run("valid token returns user_id", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+		mockLogger := interfacesMocks.NewMockLogger(t)
+
+		service := NewUserService(mockRepo, mockLogger, secretKey)
+
+		claims := jwt.MapClaims{
+			"user_id": float64(123),
+			"exp":     time.Now().Add(24 * time.Hour).Unix(),
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString([]byte(secretKey))
+		require.NoError(t, err)
+
+		userID, errDomain := service.CheckJWTToken(tokenString)
+
+		assert.Nil(t, errDomain)
+		assert.Equal(t, int32(123), userID)
+	})
+
+	t.Run("expired token returns unauthorized", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+		mockLogger := interfacesMocks.NewMockLogger(t)
+
+		service := NewUserService(mockRepo, mockLogger, secretKey)
+
+		claims := jwt.MapClaims{
+			"user_id": float64(123),
+			"exp":     time.Now().Add(-1 * time.Hour).Unix(),
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString([]byte(secretKey))
+		require.NoError(t, err)
+
+		userID, errDomain := service.CheckJWTToken(tokenString)
+
+		assert.Equal(t, int32(0), userID)
+		assert.NotNil(t, errDomain)
+		assert.Equal(t, entities.UnauthorizedErrorType, errDomain.ErrorType)
+		assert.Equal(t, "токен недействителен", errDomain.Text)
+	})
+
+	t.Run("invalid signature returns unauthorized error", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+		mockLogger := interfacesMocks.NewMockLogger(t)
+
+		service := NewUserService(mockRepo, mockLogger, secretKey)
+
+		claims := jwt.MapClaims{
+			"user_id": float64(123),
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString([]byte("wrong-secret-key"))
+		require.NoError(t, err)
+
+		userID, errDomain := service.CheckJWTToken(tokenString)
+
+		assert.Equal(t, int32(0), userID)
+		assert.NotNil(t, errDomain)
+		assert.Equal(t, entities.UnauthorizedErrorType, errDomain.ErrorType)
+	})
+
+	t.Run("malformed token returns unauthorized error", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+		mockLogger := interfacesMocks.NewMockLogger(t)
+
+		service := NewUserService(mockRepo, mockLogger, secretKey)
+
+		userID, errDomain := service.CheckJWTToken("invalid-token-format")
+
+		assert.Equal(t, int32(0), userID)
+		assert.NotNil(t, errDomain)
+		assert.Equal(t, entities.UnauthorizedErrorType, errDomain.ErrorType)
+		assert.Equal(t, "токен недействителен", errDomain.Text)
+	})
+
+	t.Run("missing user_id claim returns unauthorized", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+		mockLogger := interfacesMocks.NewMockLogger(t)
+
+		service := NewUserService(mockRepo, mockLogger, secretKey)
+
+		claims := jwt.MapClaims{
+			"username": "testuser",
+			"exp":      time.Now().Add(24 * time.Hour).Unix(),
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString([]byte(secretKey))
+		require.NoError(t, err)
+
+		userID, errDomain := service.CheckJWTToken(tokenString)
+
+		assert.Equal(t, int32(0), userID)
+		assert.NotNil(t, errDomain)
+		assert.Equal(t, entities.UnauthorizedErrorType, errDomain.ErrorType)
+		assert.Equal(t, "пользователь не авторизован", errDomain.Text)
+	})
+
+	t.Run("user_id is zero returns unauthorized", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+		mockLogger := interfacesMocks.NewMockLogger(t)
+
+		service := NewUserService(mockRepo, mockLogger, secretKey)
+
+		claims := jwt.MapClaims{
+			"user_id": float64(0),
+			"exp":     time.Now().Add(24 * time.Hour).Unix(),
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString([]byte(secretKey))
+		require.NoError(t, err)
+
+		userID, errDomain := service.CheckJWTToken(tokenString)
+
+		assert.Equal(t, int32(0), userID)
+		assert.NotNil(t, errDomain)
+		assert.Equal(t, entities.UnauthorizedErrorType, errDomain.ErrorType)
+		assert.Equal(t, "пользователь не авторизован", errDomain.Text)
+	})
+
+	t.Run("user_id as string", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+		mockLogger := interfacesMocks.NewMockLogger(t)
+
+		service := NewUserService(mockRepo, mockLogger, secretKey)
+
+		claims := jwt.MapClaims{
+			"user_id": "123",
+			"exp":     time.Now().Add(24 * time.Hour).Unix(),
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString([]byte(secretKey))
+		require.NoError(t, err)
+
+		userID, errDomain := service.CheckJWTToken(tokenString)
+
+		assert.Equal(t, int32(123), userID)
+		assert.Nil(t, errDomain)
+	})
+}

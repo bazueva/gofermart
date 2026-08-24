@@ -12,6 +12,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/samber/lo"
+	"github.com/spf13/cast"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -34,6 +35,36 @@ type userService struct {
 	formValidator *validator.Validate
 	logger        interfaces.Logger
 	secretKey     string
+}
+
+func (u *userService) CheckJWTToken(token string) (int32, *entities.DomainError) {
+	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		return []byte(u.secretKey), nil
+	})
+	if err != nil {
+		return 0, entities.NewUnauthorizedError(err, "токен недействителен")
+	}
+
+	if !parsedToken.Valid {
+		return 0, entities.NewUnauthorizedError(nil, "токен недействителен")
+	}
+
+	claims, ok := parsedToken.Claims.(jwt.MapClaims)
+	if !ok {
+		return 0, entities.NewUnauthorizedError(nil, "токен недействителен")
+	}
+
+	userIDRaw, exists := claims["user_id"]
+	if !exists {
+		return 0, entities.NewUnauthorizedError(nil, "пользователь не авторизован")
+	}
+
+	userID := cast.ToInt32(userIDRaw)
+	if userID == 0 {
+		return 0, entities.NewUnauthorizedError(nil, "пользователь не авторизован")
+	}
+
+	return userID, nil
 }
 
 func (u *userService) Login(ctx context.Context, loginForm forms.LoginForm) (string, *entities.DomainError) {

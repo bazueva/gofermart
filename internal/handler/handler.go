@@ -115,3 +115,7 @@ func (h *handler) errorHandler(writer http.ResponseWriter, err error, statusCode
 		"error": err.Error(),
 	})
 }
+
+func (h *handler) CreateOrder(writer http.ResponseWriter, request *http.Request) {
+
+}
