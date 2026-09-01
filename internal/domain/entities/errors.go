@@ -17,6 +17,8 @@ const (
 	ConflictErrorType
 	BadRequestErrorType
 	UnauthorizedErrorType
+	UnprocessableEntityErrorType
+	OkEntityErrorType
 )
 
 func (e *DomainError) Error() string {
@@ -34,6 +36,22 @@ func NewInternalServerError(err error, text string) *DomainError {
 func NewUnauthorizedError(err error, text string) *DomainError {
 	return &DomainError{
 		ErrorType: UnauthorizedErrorType,
+		SourceErr: err,
+		Text:      lo.Ternary(text != "", text, "пользователь не аутентифицирован"),
+	}
+}
+
+func NewOkError(err error, text string) *DomainError {
+	return &DomainError{
+		ErrorType: OkEntityErrorType,
+		SourceErr: err,
+		Text:      text,
+	}
+}
+
+func NewUnprocessableEntity(err error, text string) *DomainError {
+	return &DomainError{
+		ErrorType: UnprocessableEntityErrorType,
 		SourceErr: err,
 		Text:      text,
 	}

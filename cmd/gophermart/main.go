@@ -9,8 +9,10 @@ import (
 	"github.com/bazueva/gofermart/internal/app"
 	handlerPkg "github.com/bazueva/gofermart/internal/handler"
 	"github.com/bazueva/gofermart/internal/middleware"
+	"github.com/bazueva/gofermart/internal/repository/db/order"
 	"github.com/bazueva/gofermart/internal/repository/db/user"
-	"github.com/bazueva/gofermart/internal/service"
+	orderService "github.com/bazueva/gofermart/internal/service/order"
+	userService "github.com/bazueva/gofermart/internal/service/user"
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
@@ -54,10 +56,12 @@ func main() {
 
 func startServer(cfg config, db *sql.DB) {
 	userRepository := user.NewRepository(db, cfg.logger)
+	orderRepository := order.NewRepository(db, cfg.logger)
 
-	userService := service.NewUserService(userRepository, cfg.logger, cfg.SecretKey)
+	userService := userService.NewUserService(userRepository, cfg.logger, cfg.SecretKey)
+	orderService := orderService.NewOrder(orderRepository)
 
-	var application = app.NewApp(userService)
+	var application = app.NewApp(userService, orderService, cfg.logger)
 	handler := handlerPkg.NewHandler(cfg.logger, application)
 
 	router := chi.NewRouter()

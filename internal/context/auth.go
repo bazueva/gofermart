@@ -21,9 +21,9 @@ func NewAuth(ctx context.Context) *Auth {
 }
 
 func (a *Auth) WithUserID(userID int32) *Auth {
-	a.Context = context.WithValue(a.Context, userIDKey, userID)
-
-	return a
+	return &Auth{
+		Context: context.WithValue(a.Context, userIDKey, userID),
+	}
 }
 
 func (a *Auth) UserID() int32 {

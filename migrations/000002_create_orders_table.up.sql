@@ -7,7 +7,7 @@ DO $$
 
 create table IF NOT EXISTS orders (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    order_id bigint not null unique,
+    order_id varchar(50) not null unique,
     status orders_status not null,
     user_id int not null,
     bonus_sum int,
