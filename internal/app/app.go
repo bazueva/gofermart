@@ -2,10 +2,14 @@ package app
 
 import (
 	"context"
+	"errors"
 
+	contextPkg "github.com/bazueva/gofermart/internal/context"
 	"github.com/bazueva/gofermart/internal/domain/entities"
+	"github.com/bazueva/gofermart/internal/interfaces"
 	"github.com/bazueva/gofermart/internal/models"
 	"github.com/bazueva/gofermart/internal/models/forms"
+	"go.uber.org/zap"
 )
 
 /**
@@ -18,8 +22,36 @@ type UserService interface {
 	CheckJWTToken(token string) (int32, *entities.DomainError)
 }
 
+type OrderService interface {
+	CreateOrder(ctx context.Context, orderID string, userID int32) *entities.DomainError
+}
+
 type app struct {
-	userService UserService
+	userService  UserService
+	orderService OrderService
+	logger       interfaces.Logger
+}
+
+func (a *app) CreateOrder(ctx context.Context, orderID string) *entities.DomainError {
+	contextAuth, ok := ctx.(*contextPkg.Auth)
+	if !ok {
+		err := errors.New("ctx without ctx.Auth")
+		a.logger.Error("ctx is not contextAuth", zap.Error(err))
+
+		return entities.NewInternalServerError(err, "")
+	}
+
+	userID := contextAuth.UserID()
+	if userID == 0 {
+		return entities.NewUnauthorizedError(nil, "")
+	}
+
+	err := a.orderService.CreateOrder(ctx, orderID, userID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (a *app) CheckJWTToken(token string) (int32, *entities.DomainError) {
@@ -44,17 +76,6 @@ func (a *app) Login(ctx context.Context, request models.LoginRequest) (string, *
 	return tokenJWT, nil
 }
 
-// Регистрация производится по паре логин/пароль. Каждый логин должен быть уникальным.
-//	После успешной регистрации должна происходить автоматическая аутентификация пользователя.
-//Для передачи аутентификационных данных используйте механизм cookies или HTTP-заголовок Authorization
-
-/*
-Возможные коды ответа:
-200 — пользователь успешно зарегистрирован и аутентифицирован;
-400 — неверный формат запроса;
-409 — логин уже занят;
-500 — внутренняя ошибка сервера.
-*/
 func (a *app) Register(ctx context.Context, request models.RegisterRequest) (string, *entities.DomainError) {
 	tokenJWT, err := a.userService.Register(ctx, forms.UserForm{
 		Login:    request.Login,
@@ -67,8 +88,14 @@ func (a *app) Register(ctx context.Context, request models.RegisterRequest) (str
 	return tokenJWT, nil
 }
 
-func NewApp(userService UserService) *app {
+func NewApp(
+	userService UserService,
+	orderService OrderService,
+	logger interfaces.Logger,
+) *app {
 	return &app{
-		userService: userService,
+		userService:  userService,
+		orderService: orderService,
+		logger:       logger,
 	}
 }

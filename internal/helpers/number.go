@@ -1,16 +1,32 @@
 package helpers
 
-import (
-	"fmt"
-	"math"
-)
+func ValidateLuhn(number string) bool {
+	if number == "" {
+		return false
+	}
 
-func SafeInt64ToInt32(v int64) (int32, error) {
-	if v > math.MaxInt32 {
-		return 0, fmt.Errorf("value %d exceeds int32 max limit %d", v, math.MaxInt32)
+	var sum int
+	isSecond := false
+
+	for i := len(number) - 1; i >= 0; i-- {
+		ch := number[i]
+
+		if ch < '0' || ch > '9' {
+			return false
+		}
+
+		digit := int(number[i] - '0')
+
+		if isSecond {
+			digit *= 2
+			if digit > 9 {
+				digit -= 9
+			}
+		}
+
+		sum += digit
+		isSecond = !isSecond
 	}
-	if v < math.MinInt32 {
-		return 0, fmt.Errorf("value %d exceeds int32 min limit %d", v, math.MinInt32)
-	}
-	return int32(v), nil
+
+	return sum%10 == 0
 }

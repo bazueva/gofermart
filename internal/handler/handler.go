@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/bazueva/gofermart/internal/domain/entities"
@@ -15,6 +16,7 @@ import (
 type App interface {
 	Register(ctx context.Context, request models.RegisterRequest) (string, *entities.DomainError)
 	Login(ctx context.Context, request models.LoginRequest) (string, *entities.DomainError)
+	CreateOrder(ctx context.Context, id string) *entities.DomainError
 }
 
 type handler struct {
@@ -104,6 +106,10 @@ func (h *handler) errorHandler(writer http.ResponseWriter, err error, statusCode
 			statusCode = http.StatusBadRequest
 		case entities.UnauthorizedErrorType:
 			statusCode = http.StatusUnauthorized
+		case entities.UnprocessableEntityErrorType:
+			statusCode = http.StatusUnprocessableEntity
+		case entities.OkEntityErrorType:
+			statusCode = http.StatusOK
 
 		default:
 			statusCode = http.StatusInternalServerError
@@ -117,5 +123,30 @@ func (h *handler) errorHandler(writer http.ResponseWriter, err error, statusCode
 }
 
 func (h *handler) CreateOrder(writer http.ResponseWriter, request *http.Request) {
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		h.errorHandler(writer, err, http.StatusBadRequest)
 
+		return
+	}
+
+	defer func() {
+		_ = request.Body.Close()
+	}()
+
+	orderID := string(body)
+	if orderID == "" {
+		h.errorHandler(writer, errors.New("Не указан номер заказа"), http.StatusBadRequest)
+
+		return
+	}
+
+	errDomain := h.app.CreateOrder(request.Context(), orderID)
+	if errDomain != nil {
+		h.errorHandler(writer, errDomain, 0)
+
+		return
+	}
+
+	writer.WriteHeader(http.StatusAccepted)
 }

@@ -1,0 +1,261 @@
+package order
+
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/bazueva/gofermart/internal/domain/entities"
+	"github.com/bazueva/gofermart/internal/helpers"
+	"github.com/bazueva/gofermart/internal/interfaces/mocks"
+	"github.com/go-jet/jet/v2/qrm"
+	"github.com/stretchr/testify/assert"
+	mock2 "github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+)
+
+func TestRepository_CreateOrder(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - create order", func(t *testing.T) {
+		t.Parallel()
+
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer func() {
+			_ = db.Close()
+		}()
+
+		logger := mocks.NewMockLogger(t)
+
+		repo := NewRepository(db, logger)
+		ctx := t.Context()
+
+		orderID := "order-123"
+		userID := int32(123)
+		status := entities.OrdersStatusNew
+
+		expectedSQL := `INSERT INTO public.orders (order_id, user_id, status)
+        VALUES ($1, $2, $3)
+        RETURNING orders.id AS "id";`
+
+		mock.ExpectQuery(expectedSQL).
+			WithArgs(orderID, userID, hydrateDomainToOrdersStatus(status)).
+			WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+
+		err = repo.CreateOrder(ctx, orderID, userID, status)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("error - database error", func(t *testing.T) {
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer func() {
+			_ = db.Close()
+		}()
+
+		errorDB := errors.New("database connection failed")
+
+		logger := mocks.NewMockLogger(t)
+		logger.EXPECT().Error("error repository CreateOrder", mock2.Anything)
+
+		repo := NewRepository(db, logger)
+		ctx := t.Context()
+
+		orderID := "order-123"
+		userID := int32(123)
+		status := entities.OrdersStatusProcessing
+
+		expectedSQL := `INSERT INTO public.orders (order_id, user_id, status)
+        VALUES ($1, $2, $3)
+        RETURNING orders.id AS "id";`
+
+		mock.ExpectQuery(expectedSQL).
+			WithArgs(orderID, userID, hydrateDomainToOrdersStatus(status)).
+			WillReturnError(errorDB)
+
+		err = repo.CreateOrder(ctx, orderID, userID, status)
+
+		assert.Error(t, err)
+		assert.IsType(t, &entities.DomainError{}, err)
+		assert.Equal(t, entities.InternalServerErrorType, err.(*entities.DomainError).ErrorType)
+	})
+
+	t.Run("context timeout", func(t *testing.T) {
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer func() {
+			_ = db.Close()
+		}()
+
+		logger := mocks.NewMockLogger(t)
+		logger.EXPECT().Error("error repository CreateOrder", mock2.Anything)
+
+		repo := NewRepository(db, logger)
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+
+		orderID := "order-123"
+		userID := int32(123)
+		status := entities.OrdersStatusInvalid
+
+		expectedSQL := `INSERT INTO orders (order_id, user_id, status) VALUES ($1, $2, $3) RETURNING id`
+
+		mock.ExpectQuery(expectedSQL).
+			WithArgs(orderID, userID, hydrateDomainToOrdersStatus(status)).
+			WillReturnError(context.DeadlineExceeded)
+
+		err = repo.CreateOrder(ctx, orderID, userID, status)
+
+		assert.Error(t, err)
+		assert.IsType(t, &entities.DomainError{}, err)
+		assert.Equal(t, entities.InternalServerErrorType, err.(*entities.DomainError).ErrorType)
+	})
+}
+
+func TestRepository_FindByOrderID(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - find order", func(t *testing.T) {
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer func() {
+			_ = db.Close()
+		}()
+
+		logger := mocks.NewMockLogger(t)
+
+		repo := NewRepository(db, logger)
+		ctx := t.Context()
+
+		orderID := "order-123"
+		expectedSQL := `SELECT orders.id AS "orders.id",
+             orders.order_id AS "orders.order_id",
+             orders.status AS "orders.status",
+             orders.user_id AS "orders.user_id",
+             orders.created_at AS "orders.created_at"
+        FROM public.orders
+        WHERE orders.order_id = $1::text;`
+
+		rows := sqlmock.NewRows([]string{"orders.id", "orders.order_id", "orders.status", "orders.user_id", "orders.created_at"}).
+			AddRow(1, "order-123", "PROCESSED", 123, time.Now())
+
+		mock.ExpectQuery(expectedSQL).
+			WithArgs(orderID).
+			WillReturnRows(rows)
+
+		result, err := repo.FindByOrderID(ctx, orderID)
+
+		assert.Nil(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, int32(1), result.ID)
+		assert.Equal(t, "order-123", result.OrderID)
+		assert.Equal(t, int32(123), result.UserID)
+		assert.Equal(t, entities.OrdersStatusProcessed, result.Status)
+	})
+
+	t.Run("error - order not found", func(t *testing.T) {
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer func() {
+			_ = db.Close()
+		}()
+
+		logger := mocks.NewMockLogger(t)
+
+		repo := NewRepository(db, logger)
+		ctx := t.Context()
+
+		orderID := "order-not-found"
+		expectedSQL := `SELECT orders.id AS "orders.id",
+             orders.order_id AS "orders.order_id",
+             orders.status AS "orders.status",
+             orders.user_id AS "orders.user_id",
+             orders.created_at AS "orders.created_at"
+        FROM public.orders
+        WHERE orders.order_id = $1::text;`
+
+		mock.ExpectQuery(expectedSQL).
+			WithArgs(orderID).
+			WillReturnError(qrm.ErrNoRows)
+
+		result, err := repo.FindByOrderID(ctx, orderID)
+
+		assert.Nil(t, err)
+		assert.Nil(t, result)
+	})
+
+	t.Run("error - database error", func(t *testing.T) {
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer func() {
+			_ = db.Close()
+		}()
+
+		errorDB := errors.New("database connection failed")
+
+		logger := mocks.NewMockLogger(t)
+		logger.EXPECT().Error("error repository FindByOrderID", mock2.Anything)
+
+		repo := NewRepository(db, logger)
+		ctx := t.Context()
+
+		orderID := "order-123"
+		expectedSQL := `SELECT orders.id AS "orders.id",
+             orders.order_id AS "orders.order_id",
+             orders.status AS "orders.status",
+             orders.user_id AS "orders.user_id",
+             orders.created_at AS "orders.created_at"
+        FROM public.orders
+        WHERE orders.order_id = $1::text;`
+
+		mock.ExpectQuery(expectedSQL).
+			WithArgs(orderID).
+			WillReturnError(errorDB)
+
+		result, err := repo.FindByOrderID(ctx, orderID)
+
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.IsType(t, &entities.DomainError{}, err)
+		assert.Equal(t, entities.InternalServerErrorType, err.(*entities.DomainError).ErrorType)
+	})
+
+	t.Run("context timeout", func(t *testing.T) {
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer func() {
+			_ = db.Close()
+		}()
+
+		logger := mocks.NewMockLogger(t)
+		logger.EXPECT().Error("error repository FindByOrderID", mock2.Anything)
+
+		repo := NewRepository(db, logger)
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+
+		orderID := "order-123"
+		expectedSQL := `SELECT orders.id AS "orders.id",
+             orders.order_id AS "orders.order_id",
+             orders.status AS "orders.status",
+             orders.user_id AS "orders.user_id",
+             orders.created_at AS "orders.created_at"
+        FROM public.orders
+        WHERE orders.order_id = $1::text;`
+
+		mock.ExpectQuery(expectedSQL).
+			WithArgs(orderID).
+			WillReturnError(context.DeadlineExceeded)
+
+		result, err := repo.FindByOrderID(ctx, orderID)
+
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.IsType(t, &entities.DomainError{}, err)
+		assert.Equal(t, entities.InternalServerErrorType, err.(*entities.DomainError).ErrorType)
+	})
+}
