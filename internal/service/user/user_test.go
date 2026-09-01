@@ -9,7 +9,7 @@ import (
 	"github.com/bazueva/gofermart/internal/domain/entities"
 	interfacesMocks "github.com/bazueva/gofermart/internal/interfaces/mocks"
 	"github.com/bazueva/gofermart/internal/models/forms"
-	"github.com/bazueva/gofermart/internal/service/mocks"
+	"github.com/bazueva/gofermart/internal/service/user/mocks"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
