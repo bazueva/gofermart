@@ -10,6 +10,7 @@ import (
 	"github.com/bazueva/gofermart/internal/domain/entities"
 	"github.com/bazueva/gofermart/internal/interfaces"
 	"github.com/bazueva/gofermart/internal/models"
+	"github.com/spf13/cast"
 	"go.uber.org/zap"
 )
 
@@ -17,6 +18,7 @@ type App interface {
 	Register(ctx context.Context, request models.RegisterRequest) (string, *entities.DomainError)
 	Login(ctx context.Context, request models.LoginRequest) (string, *entities.DomainError)
 	CreateOrder(ctx context.Context, id string) *entities.DomainError
+	UserOrdersList(ctx context.Context, page int32, perPage int32) ([]entities.Order, *entities.DomainError)
 }
 
 type handler struct {
@@ -149,4 +151,44 @@ func (h *handler) CreateOrder(writer http.ResponseWriter, request *http.Request)
 	}
 
 	writer.WriteHeader(http.StatusAccepted)
+}
+
+func (h *handler) UserOrdersList(writer http.ResponseWriter, request *http.Request) {
+	orders, errDomain := h.app.UserOrdersList(
+		request.Context(),
+		cast.ToInt32(request.URL.Query().Get("page")),
+		cast.ToInt32(request.URL.Query().Get("perPage")),
+	)
+	if errDomain != nil {
+		h.errorHandler(writer, errDomain, 0)
+
+		return
+	}
+
+	if len(orders) == 0 {
+		writer.WriteHeader(http.StatusNoContent)
+
+		return
+	}
+
+	result := make([]models.Order, len(orders))
+	for i, order := range orders {
+		result[i] = models.Order{
+			Number:     order.OrderID,
+			Status:     string(order.Status),
+			Accrual:    0,
+			UploadedAt: order.CreatedAt.Format("2006-01-02T15:04:05-07:00"),
+		}
+	}
+
+	resultJson, err := json.Marshal(result)
+	if err != nil {
+		h.logger.Error("error marshal []order", zap.Error(err))
+
+		h.errorHandler(writer, entities.NewInternalServerError(err, ""), 0)
+
+		return
+	}
+
+	writer.Write(resultJson)
 }

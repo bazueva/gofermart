@@ -75,6 +75,7 @@ func startServer(cfg config, db *sql.DB) {
 		r.Use(middleware.Authorization(application, cfg.logger))
 
 		r.Post("/api/user/orders", handler.CreateOrder)
+		r.Get("/api/user/orders", handler.UserOrdersList)
 	})
 
 	server := &http.Server{

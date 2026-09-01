@@ -6,6 +6,7 @@ import (
 
 	contextPkg "github.com/bazueva/gofermart/internal/context"
 	"github.com/bazueva/gofermart/internal/domain/entities"
+	"github.com/bazueva/gofermart/internal/domain/pagination"
 	"github.com/bazueva/gofermart/internal/interfaces"
 	"github.com/bazueva/gofermart/internal/models"
 	"github.com/bazueva/gofermart/internal/models/forms"
@@ -24,6 +25,7 @@ type UserService interface {
 
 type OrderService interface {
 	CreateOrder(ctx context.Context, orderID string, userID int32) *entities.DomainError
+	OrdersListUser(ctx context.Context, userID int32, pagination *pagination.Pagination) ([]entities.Order, *entities.DomainError)
 }
 
 type app struct {
@@ -32,21 +34,44 @@ type app struct {
 	logger       interfaces.Logger
 }
 
-func (a *app) CreateOrder(ctx context.Context, orderID string) *entities.DomainError {
+func (a *app) UserOrdersList(ctx context.Context, page int32, perPage int32) ([]entities.Order, *entities.DomainError) {
+	userID, err := a.userIDFromContext(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+
+	orders, err := a.orderService.OrdersListUser(ctx, userID, pagination.NewPagination(int64(page), int64(perPage)))
+	if err != nil {
+		return nil, err
+	}
+
+	return orders, nil
+}
+
+func (a *app) userIDFromContext(ctx context.Context, errorIfEmpty bool) (int32, *entities.DomainError) {
 	contextAuth, ok := ctx.(*contextPkg.Auth)
 	if !ok {
 		err := errors.New("ctx without ctx.Auth")
 		a.logger.Error("ctx is not contextAuth", zap.Error(err))
 
-		return entities.NewInternalServerError(err, "")
+		return 0, entities.NewInternalServerError(err, "")
 	}
 
 	userID := contextAuth.UserID()
-	if userID == 0 {
-		return entities.NewUnauthorizedError(nil, "")
+	if errorIfEmpty && userID == 0 {
+		return 0, entities.NewUnauthorizedError(nil, "")
 	}
 
-	err := a.orderService.CreateOrder(ctx, orderID, userID)
+	return userID, nil
+}
+
+func (a *app) CreateOrder(ctx context.Context, orderID string) *entities.DomainError {
+	userID, err := a.userIDFromContext(ctx, true)
+	if err != nil {
+		return err
+	}
+
+	err = a.orderService.CreateOrder(ctx, orderID, userID)
 	if err != nil {
 		return err
 	}
