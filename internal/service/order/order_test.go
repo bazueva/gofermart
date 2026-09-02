@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/bazueva/gofermart/internal/domain/entities"
+	"github.com/bazueva/gofermart/internal/domain/pagination"
 	"github.com/bazueva/gofermart/internal/service/order/mocks"
 	"github.com/stretchr/testify/assert"
 )
@@ -228,5 +229,128 @@ func TestOrder_ValidateOrderID(t *testing.T) {
 
 		assert.Equal(t, "номер заказа уже был загружен другим пользователем", err.Error())
 		assert.Equal(t, entities.ConflictErrorType, err.ErrorType)
+	})
+}
+
+func TestOrder_OrdersListUser(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - get orders list", func(t *testing.T) {
+		mockRepo := mocks.NewMockRepository(t)
+
+		ctx := t.Context()
+		userID := int32(123)
+		pag := pagination.NewPagination(1, 20)
+
+		expectedOrders := []entities.Order{
+			{
+				ID:      1,
+				OrderID: "12345678903",
+				UserID:  userID,
+				Status:  entities.OrdersStatusNew,
+			},
+			{
+				ID:      2,
+				OrderID: "123456789015",
+				UserID:  userID,
+				Status:  entities.OrdersStatusProcessed,
+			},
+		}
+
+		mockRepo.EXPECT().
+			CountOrdersByUserID(ctx, userID).
+			Return(int32(2), nil)
+
+		mockRepo.EXPECT().
+			FindByUserID(ctx, userID, int64(20), int64(0)).
+			Return(expectedOrders, nil)
+
+		o := &order{
+			repository: mockRepo,
+		}
+
+		orders, err := o.OrdersListUser(ctx, userID, pag)
+
+		assert.Nil(t, err)
+		assert.Len(t, orders, 2)
+	})
+
+	t.Run("success - no orders found", func(t *testing.T) {
+		mockRepo := mocks.NewMockRepository(t)
+
+		ctx := t.Context()
+		userID := int32(123)
+		pag := pagination.NewPagination(1, 20)
+
+		mockRepo.EXPECT().
+			CountOrdersByUserID(ctx, userID).
+			Return(int32(0), nil)
+
+		o := &order{
+			repository: mockRepo,
+		}
+
+		orders, err := o.OrdersListUser(ctx, userID, pag)
+
+		assert.Nil(t, err)
+		assert.Nil(t, orders)
+	})
+
+	t.Run("error - count orders failed", func(t *testing.T) {
+		mockRepo := mocks.NewMockRepository(t)
+
+		ctx := t.Context()
+		userID := int32(123)
+		pag := pagination.NewPagination(1, 20)
+
+		domainErr := entities.NewInternalServerError(
+			errors.New("database error"),
+			"failed to count orders",
+		)
+
+		mockRepo.EXPECT().
+			CountOrdersByUserID(ctx, userID).
+			Return(int32(0), domainErr)
+
+		o := &order{
+			repository: mockRepo,
+		}
+
+		orders, err := o.OrdersListUser(ctx, userID, pag)
+
+		assert.Error(t, err)
+		assert.Nil(t, orders)
+		assert.Equal(t, domainErr, err)
+	})
+
+	t.Run("error - find orders failed", func(t *testing.T) {
+		mockRepo := mocks.NewMockRepository(t)
+
+		ctx := t.Context()
+		userID := int32(123)
+		pag := pagination.NewPagination(1, 20)
+
+		domainErr := entities.NewInternalServerError(
+			errors.New("database error"),
+			"failed to find orders",
+		)
+
+		mockRepo.EXPECT().
+			CountOrdersByUserID(ctx, userID).
+			Return(int32(2), nil)
+
+		mockRepo.EXPECT().
+			FindByUserID(ctx, userID, pag.GetPerPage(), pag.GetOffset()).
+			Return(nil, domainErr)
+
+		o := &order{
+			repository: mockRepo,
+		}
+
+		orders, err := o.OrdersListUser(ctx, userID, pag)
+
+		assert.Error(t, err)
+		assert.Nil(t, orders)
+		assert.Equal(t, domainErr, err)
 	})
 }

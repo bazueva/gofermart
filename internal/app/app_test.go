@@ -6,7 +6,9 @@ import (
 
 	appMocks "github.com/bazueva/gofermart/internal/app/mocks"
 	"github.com/bazueva/gofermart/internal/context"
+	contextPkg "github.com/bazueva/gofermart/internal/context"
 	"github.com/bazueva/gofermart/internal/domain/entities"
+	"github.com/bazueva/gofermart/internal/domain/pagination"
 	"github.com/bazueva/gofermart/internal/interfaces/mocks"
 	"github.com/bazueva/gofermart/internal/models"
 	"github.com/bazueva/gofermart/internal/models/forms"
@@ -47,8 +49,8 @@ func TestApp_CreateOrder(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		ctx := context.NewAuth(t.Context())
-		ctx.WithUserID(20)
+		ctx := context.NewAuth(t.Context()).
+			WithUserID(20)
 
 		orderService := appMocks.NewMockOrderService(t)
 		orderService.EXPECT().CreateOrder(ctx, "12323", int32(20)).
@@ -66,8 +68,8 @@ func TestApp_CreateOrder(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		ctx := context.NewAuth(t.Context())
-		ctx.WithUserID(20)
+		ctx := context.NewAuth(t.Context()).
+			WithUserID(20)
 
 		orderService := appMocks.NewMockOrderService(t)
 		orderService.EXPECT().CreateOrder(ctx, "12323", int32(20)).
@@ -257,5 +259,159 @@ func TestApp_Register(t *testing.T) {
 		assert.Equal(t, "", token)
 		assert.Equal(t, entities.ConflictErrorType, err.ErrorType)
 		mockUserService.AssertExpectations(t)
+	})
+}
+
+func TestApp_UserOrdersList(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - get user orders", func(t *testing.T) {
+		mockOrderService := appMocks.NewMockOrderService(t)
+
+		userID := int32(123)
+		ctx := contextPkg.NewAuth(t.Context()).WithUserID(userID)
+
+		page := int32(1)
+		perPage := int32(20)
+
+		expectedOrders := []entities.Order{
+			{
+				ID:      1,
+				OrderID: "12345678903",
+				UserID:  userID,
+				Status:  entities.OrdersStatusNew,
+			},
+		}
+
+		mockOrderService.EXPECT().
+			OrdersListUser(ctx, userID, pagination.NewPagination(int64(page), int64(perPage))).
+			Return(expectedOrders, nil)
+
+		a := &app{
+			orderService: mockOrderService,
+		}
+
+		orders, err := a.UserOrdersList(ctx, page, perPage)
+
+		assert.Nil(t, err)
+		assert.Equal(t, expectedOrders, orders)
+	})
+
+	t.Run("error - user not authorized", func(t *testing.T) {
+		ctx := t.Context()
+		page := int32(1)
+		perPage := int32(20)
+
+		domainErr := entities.NewInternalServerError(
+			errors.New("ctx without ctx.Auth"),
+			"",
+		)
+
+		logger := mocks.NewMockLogger(t)
+		logger.EXPECT().
+			Error("ctx is not contextAuth", mock2.Anything)
+
+		a := &app{
+			logger: logger,
+		}
+
+		orders, err := a.UserOrdersList(ctx, page, perPage)
+
+		assert.Error(t, err)
+		assert.Nil(t, orders)
+		assert.Equal(t, domainErr, err)
+	})
+
+	t.Run("error - order service failed", func(t *testing.T) {
+		mockOrderService := appMocks.NewMockOrderService(t)
+
+		userID := int32(123)
+		ctx := contextPkg.NewAuth(t.Context()).WithUserID(userID)
+		page := int32(1)
+		perPage := int32(20)
+
+		domainErr := entities.NewInternalServerError(
+			errors.New("database error"),
+			"failed to get orders",
+		)
+
+		mockOrderService.EXPECT().
+			OrdersListUser(ctx, userID, pagination.NewPagination(int64(page), int64(perPage))).
+			Return(nil, domainErr)
+
+		a := &app{
+			orderService: mockOrderService,
+		}
+
+		orders, err := a.UserOrdersList(ctx, page, perPage)
+
+		assert.Error(t, err)
+		assert.Nil(t, orders)
+		assert.Equal(t, domainErr, err)
+	})
+}
+
+func TestApp_UserIDFromContext(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - get userID from context", func(t *testing.T) {
+		logger := mocks.NewMockLogger(t)
+		ctx := contextPkg.NewAuth(t.Context()).WithUserID(123)
+
+		a := &app{
+			logger: logger,
+		}
+
+		userID, err := a.userIDFromContext(ctx, false)
+
+		assert.Nil(t, err)
+		assert.Equal(t, int32(123), userID)
+	})
+
+	t.Run("success - userID 0 with errorIfEmpty false", func(t *testing.T) {
+		logger := mocks.NewMockLogger(t)
+		ctx := contextPkg.NewAuth(t.Context()).WithUserID(0)
+
+		a := &app{
+			logger: logger,
+		}
+
+		userID, err := a.userIDFromContext(ctx, false)
+
+		assert.Nil(t, err)
+		assert.Equal(t, int32(0), userID)
+	})
+
+	t.Run("error - context without Auth", func(t *testing.T) {
+		logger := mocks.NewMockLogger(t)
+		logger.EXPECT().
+			Error("ctx is not contextAuth", mock2.Anything)
+
+		ctx := t.Context()
+
+		a := &app{
+			logger: logger,
+		}
+
+		userID, err := a.userIDFromContext(ctx, false)
+
+		assert.Error(t, err)
+		assert.Equal(t, int32(0), userID)
+		assert.Equal(t, entities.InternalServerErrorType, err.ErrorType)
+	})
+
+	t.Run("error - userID 0 with errorIfEmpty true", func(t *testing.T) {
+		logger := mocks.NewMockLogger(t)
+		ctx := contextPkg.NewAuth(t.Context()).WithUserID(0)
+
+		a := &app{
+			logger: logger,
+		}
+
+		userID, err := a.userIDFromContext(ctx, true)
+
+		assert.Error(t, err)
+		assert.Equal(t, int32(0), userID)
+		assert.Equal(t, entities.UnauthorizedErrorType, err.ErrorType)
 	})
 }

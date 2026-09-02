@@ -19,3 +19,6 @@ packages:
   github.com/bazueva/gofermart/internal/app:
     config:
       all: true
+  github.com/bazueva/gofermart/internal/handler:
+    config:
+      all: true
