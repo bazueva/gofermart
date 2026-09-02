@@ -18,7 +18,7 @@ type Pagination struct {
 
 func (p *Pagination) setPage(page int64) {
 	if page <= 0 {
-		p.page = page
+		p.page = 1
 
 		return
 	}

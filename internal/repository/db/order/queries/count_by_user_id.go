@@ -7,7 +7,7 @@ import (
 
 func NewCountByUserID(userID int32) postgres.SelectStatement {
 	return postgres.SELECT(
-		postgres.COUNT(table.Orders.ID),
+		postgres.COUNT(table.Orders.ID).AS("count"),
 	).FROM(table.Orders).
 		WHERE(table.Orders.UserID.EQ(postgres.Int32(userID)))
 }

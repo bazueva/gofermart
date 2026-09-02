@@ -26,6 +26,10 @@ func (o *order) OrdersListUser(
 	pagination *pagination.Pagination,
 ) ([]entities.Order, *entities.DomainError) {
 	countOrders, err := o.repository.CountOrdersByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
 	if countOrders == 0 {
 		return nil, nil
 	}
