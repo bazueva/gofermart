@@ -384,6 +384,7 @@ func TestRepository_FindByUserID(t *testing.T) {
              orders.created_at AS "orders.created_at"
         FROM public.orders
         WHERE orders.user_id = $1::integer
+        ORDER BY orders.created_at DESC
         LIMIT $2
         OFFSET $3;`
 
@@ -440,6 +441,7 @@ func TestRepository_FindByUserID(t *testing.T) {
              orders.created_at AS "orders.created_at"
         FROM public.orders
         WHERE orders.user_id = $1::integer
+        ORDER BY orders.created_at DESC
         LIMIT $2
         OFFSET $3;`
 
@@ -480,6 +482,7 @@ func TestRepository_FindByUserID(t *testing.T) {
              orders.created_at AS "orders.created_at"
         FROM public.orders
         WHERE orders.user_id = $1::integer
+        ORDER BY orders.created_at DESC
         LIMIT $2
         OFFSET $3;`
 
@@ -520,6 +523,7 @@ func TestRepository_FindByUserID(t *testing.T) {
              orders.created_at AS "orders.created_at"
         FROM public.orders
         WHERE orders.user_id = $1::integer
+        ORDER BY orders.created_at DESC
         LIMIT $2
         OFFSET $3;`
 

@@ -14,6 +14,7 @@ func NewFindByUserID(userID int32, limit, offset int64) postgres.SelectStatement
 		table.Orders.CreatedAt,
 	).FROM(table.Orders).
 		WHERE(table.Orders.UserID.EQ(postgres.Int32(userID))).
+		ORDER_BY(table.Orders.CreatedAt.DESC()).
 		LIMIT(limit).
 		OFFSET(offset)
 }
