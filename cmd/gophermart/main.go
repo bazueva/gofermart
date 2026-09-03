@@ -60,7 +60,7 @@ func main() {
 func startServer(cfg config, db *sql.DB) {
 	/* http repo */
 	bonusRepository, err := bonus.NewRepository(
-		fmt.Sprintf("http://%s", cfg.AccrualSystemAddress.String()),
+		fmt.Sprintf(cfg.AccrualSystemAddress),
 		cfg.logger,
 	)
 	if err != nil {
