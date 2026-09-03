@@ -119,6 +119,13 @@ func (r *repository) FindByUserID(
 			UserID:      item.UserID,
 			CreatedAt:   item.CreatedAt,
 			ProcessedAt: item.ProcessedAt,
+			BonusSum: func() float64 {
+				if item.BonusSum != nil {
+					return *item.BonusSum
+				}
+
+				return 0
+			}(),
 		}
 	}), nil
 }
