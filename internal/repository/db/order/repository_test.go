@@ -23,7 +23,7 @@ func TestRepository_CreateOrder(t *testing.T) {
 	t.Run("success - create order", func(t *testing.T) {
 		t.Parallel()
 
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -52,7 +52,7 @@ func TestRepository_CreateOrder(t *testing.T) {
 	})
 
 	t.Run("error - database error", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -86,7 +86,7 @@ func TestRepository_CreateOrder(t *testing.T) {
 	})
 
 	t.Run("context timeout", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -121,7 +121,7 @@ func TestRepository_FindByOrderID(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success - find order", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -159,7 +159,7 @@ func TestRepository_FindByOrderID(t *testing.T) {
 	})
 
 	t.Run("error - order not found", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -190,7 +190,7 @@ func TestRepository_FindByOrderID(t *testing.T) {
 	})
 
 	t.Run("error - database error", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -226,7 +226,7 @@ func TestRepository_FindByOrderID(t *testing.T) {
 	})
 
 	t.Run("context timeout", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -265,7 +265,7 @@ func TestRepository_CountOrdersByUserID(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success - find orders", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -296,7 +296,7 @@ func TestRepository_CountOrdersByUserID(t *testing.T) {
 	})
 
 	t.Run("error - database error", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -328,7 +328,7 @@ func TestRepository_CountOrdersByUserID(t *testing.T) {
 	})
 
 	t.Run("context timeout", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -363,7 +363,7 @@ func TestRepository_FindByUserID(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success - find orders by user ID", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -420,7 +420,7 @@ func TestRepository_FindByUserID(t *testing.T) {
 	})
 
 	t.Run("success - no orders found", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -457,7 +457,7 @@ func TestRepository_FindByUserID(t *testing.T) {
 	})
 
 	t.Run("error - database error", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -500,7 +500,7 @@ func TestRepository_FindByUserID(t *testing.T) {
 	})
 
 	t.Run("context timeout", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -545,7 +545,7 @@ func TestRepository_FindStaleOrders(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success - find stale orders", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -586,7 +586,7 @@ func TestRepository_FindStaleOrders(t *testing.T) {
 	})
 
 	t.Run("success - no stale orders found", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -620,7 +620,7 @@ func TestRepository_FindStaleOrders(t *testing.T) {
 	})
 
 	t.Run("error - database error", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -660,7 +660,7 @@ func TestRepository_FindStaleOrders(t *testing.T) {
 	})
 
 	t.Run("context timeout", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -701,7 +701,7 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success - update status and bonus", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -730,7 +730,7 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 	})
 
 	t.Run("success - update status invalid and bonus", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -759,7 +759,7 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 	})
 
 	t.Run("error - database error", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -794,7 +794,7 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 	})
 
 	t.Run("context timeout", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()

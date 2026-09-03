@@ -9,7 +9,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 )
 
-func SqlMockTest(t *testing.T) (*sql.DB, sqlmock.Sqlmock, error) {
+func SQLMockTest(t *testing.T) (*sql.DB, sqlmock.Sqlmock, error) {
 	return sqlmock.New(
 		sqlmock.QueryMatcherOption(sqlmock.QueryMatcherFunc(func(expectedSQL, actualSQL string) error {
 			cleanExpected := strings.TrimSuffix(strings.TrimSpace(strings.ToLower(expectedSQL)), ";")

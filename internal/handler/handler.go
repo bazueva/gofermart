@@ -138,7 +138,7 @@ func (h *handler) CreateOrder(writer http.ResponseWriter, request *http.Request)
 
 	orderID := string(body)
 	if orderID == "" {
-		h.errorHandler(writer, errors.New("Не указан номер заказа"), http.StatusBadRequest)
+		h.errorHandler(writer, errors.New("не указан номер заказа"), http.StatusBadRequest)
 
 		return
 	}
@@ -187,7 +187,7 @@ func (h *handler) UserOrdersList(writer http.ResponseWriter, request *http.Reque
 		}
 	}
 
-	resultJson, err := json.Marshal(result)
+	resultJSON, err := json.Marshal(result)
 	if err != nil {
 		h.logger.Error("error marshal []order", zap.Error(err))
 
@@ -196,5 +196,5 @@ func (h *handler) UserOrdersList(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	writer.Write(resultJson)
+	writer.Write(resultJSON)
 }
