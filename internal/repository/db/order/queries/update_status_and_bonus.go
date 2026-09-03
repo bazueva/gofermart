@@ -8,7 +8,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
-func NewUpdateStatusAndBonus(orderID string, status dbModel.OrdersStatus, bonusSum int32) postgres.UpdateStatement {
+func NewUpdateStatusAndBonus(orderID string, status dbModel.OrdersStatus, bonusSum float64) postgres.UpdateStatement {
 	columns := postgres.ColumnList{
 		table.Orders.Status,
 		table.Orders.BonusSum,

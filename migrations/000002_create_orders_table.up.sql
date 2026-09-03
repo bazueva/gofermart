@@ -10,7 +10,7 @@ create table IF NOT EXISTS orders (
     order_id varchar(50) not null unique,
     status orders_status not null,
     user_id int not null,
-    bonus_sum int,
+    bonus_sum double precision,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     processed_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

@@ -21,7 +21,7 @@ type ordersTable struct {
 	OrderID     postgres.ColumnString
 	Status      postgres.ColumnString
 	UserID      postgres.ColumnInteger
-	BonusSum    postgres.ColumnInteger
+	BonusSum    postgres.ColumnFloat
 	CreatedAt   postgres.ColumnTimestampz
 	ProcessedAt postgres.ColumnTimestampz
 	UpdatedAt   postgres.ColumnTimestampz
@@ -70,7 +70,7 @@ func newOrdersTableImpl(schemaName, tableName, alias string) ordersTable {
 		OrderIDColumn     = postgres.StringColumn("order_id")
 		StatusColumn      = postgres.StringColumn("status")
 		UserIDColumn      = postgres.IntegerColumn("user_id")
-		BonusSumColumn    = postgres.IntegerColumn("bonus_sum")
+		BonusSumColumn    = postgres.FloatColumn("bonus_sum")
 		CreatedAtColumn   = postgres.TimestampzColumn("created_at")
 		ProcessedAtColumn = postgres.TimestampzColumn("processed_at")
 		UpdatedAtColumn   = postgres.TimestampzColumn("updated_at")

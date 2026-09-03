@@ -305,7 +305,7 @@ func TestHandler_CreateOrder(t *testing.T) {
 		assert.Nil(t, err)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
-		assert.Equal(t, "Не указан номер заказа", response["error"])
+		assert.Equal(t, "не указан номер заказа", response["error"])
 	})
 
 	t.Run("error - create order", func(t *testing.T) {

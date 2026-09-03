@@ -714,7 +714,7 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 
 		orderID := "12345678903"
 		status := entities.OrdersStatusProcessed
-		sum := int32(100)
+		sum := float64(100)
 
 		expectedSQL := `UPDATE public.orders
         SET (status, bonus_sum, updated_at, processed_at) = ($1, $2, $3, $4)
@@ -743,7 +743,7 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 
 		orderID := "12345678903"
 		status := entities.OrdersStatusInvalid
-		sum := int32(100)
+		sum := float64(100)
 
 		expectedSQL := `UPDATE public.orders
         SET (status, bonus_sum, updated_at) = ($1, $2, $3)
@@ -776,7 +776,7 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 
 		orderID := "12345678903"
 		status := entities.OrdersStatusProcessed
-		sum := int32(100)
+		sum := float64(100)
 
 		expectedSQL := `UPDATE public.orders
         SET (status, bonus_sum, updated_at, processed_at) = ($1, $2, $3, $4)
@@ -809,7 +809,7 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 
 		orderID := "12345678903"
 		status := entities.OrdersStatusProcessed
-		sum := int32(100)
+		sum := float64(100)
 
 		expectedSQL := `UPDATE public.orders
         SET (status, bonus_sum, updated_at, processed_at) = ($1, $2, $3, $4)

@@ -17,7 +17,7 @@ type BonusRepository interface {
 }
 
 type OrderRepository interface {
-	UpdateStatusAndBonus(ctx context.Context, orderID string, status entities.OrderStatus, sum int32) *entities.DomainError
+	UpdateStatusAndBonus(ctx context.Context, orderID string, status entities.OrderStatus, sum float64) *entities.DomainError
 	FindStaleOrders(ctx context.Context, statuses []entities.OrderStatus, limit int64) ([]string, *entities.DomainError)
 }
 

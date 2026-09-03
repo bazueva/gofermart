@@ -21,9 +21,9 @@ type repository struct {
 }
 
 type order struct {
-	Order   string `json:"order"`
-	Status  string `json:"status"`
-	Accrual int32  `json:"accrual"`
+	Order   string  `json:"order"`
+	Status  string  `json:"status"`
+	Accrual float64 `json:"accrual"`
 }
 
 func (r *repository) GetOrder(ctx context.Context, orderID string) (*entities.Order, *entities.DomainError) {

@@ -16,7 +16,7 @@ type Orders struct {
 	OrderID     string
 	Status      OrdersStatus
 	UserID      int32
-	BonusSum    *int32
+	BonusSum    *float64
 	CreatedAt   *time.Time
 	ProcessedAt *time.Time
 	UpdatedAt   *time.Time

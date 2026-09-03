@@ -53,7 +53,7 @@ func (r *repository) UpdateStatusAndBonus(
 	ctx context.Context,
 	orderID string,
 	status entities.OrderStatus,
-	sum int32,
+	sum float64,
 ) *entities.DomainError {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()

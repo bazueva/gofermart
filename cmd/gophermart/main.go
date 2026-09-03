@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -60,7 +59,7 @@ func main() {
 func startServer(cfg config, db *sql.DB) {
 	/* http repo */
 	bonusRepository, err := bonus.NewRepository(
-		fmt.Sprintf(cfg.AccrualSystemAddress),
+		cfg.AccrualSystemAddress,
 		cfg.logger,
 	)
 	if err != nil {
