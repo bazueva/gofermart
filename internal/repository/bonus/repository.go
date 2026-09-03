@@ -95,7 +95,7 @@ func (r *repository) checkResponseStatus(code int, orderID string) *entities.Dom
 
 func NewRepository(addr string, logger interfaces.Logger) (*repository, error) {
 	if addr == "" {
-		return nil, fmt.Errorf("Не указан адрес сервера")
+		return nil, fmt.Errorf("не указан адрес сервера")
 	}
 
 	return &repository{
