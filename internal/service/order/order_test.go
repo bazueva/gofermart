@@ -6,8 +6,10 @@ import (
 
 	"github.com/bazueva/gofermart/internal/domain/entities"
 	"github.com/bazueva/gofermart/internal/domain/pagination"
+	interfacesMocks "github.com/bazueva/gofermart/internal/interfaces/mocks"
 	"github.com/bazueva/gofermart/internal/service/order/mocks"
 	"github.com/stretchr/testify/assert"
+	mock2 "github.com/stretchr/testify/mock"
 )
 
 func TestOrder_CreateOrder(t *testing.T) {
@@ -15,6 +17,8 @@ func TestOrder_CreateOrder(t *testing.T) {
 
 	t.Run("success - create order", func(t *testing.T) {
 		mockRepo := mocks.NewMockRepository(t)
+		mockQueue := mocks.NewMockOrderQueue(t)
+		mockLogger := interfacesMocks.NewMockLogger(t)
 
 		ctx := t.Context()
 		orderID := "12345678903"
@@ -28,8 +32,14 @@ func TestOrder_CreateOrder(t *testing.T) {
 			Return(nil).
 			Once()
 
+		mockQueue.EXPECT().AddOrderIDToQueue(orderID)
+
+		mockLogger.EXPECT().Info("Заказ отправлен в очередь на обработку", mock2.Anything)
+
 		o := &order{
 			repository: mockRepo,
+			orderQueue: mockQueue,
+			logger:     mockLogger,
 		}
 
 		err := o.CreateOrder(ctx, orderID, userID)

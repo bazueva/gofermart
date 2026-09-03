@@ -39,11 +39,11 @@ func TestRepository_CreateOrder(t *testing.T) {
 		status := entities.OrdersStatusNew
 
 		expectedSQL := `INSERT INTO public.orders (order_id, user_id, status)
-        VALUES ($1, $2, $3)
+        VALUES ($1, $2, 'NEW')
         RETURNING orders.id AS "id";`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(orderID, userID, hydrateDomainToOrdersStatusEnum(status)).
+			WithArgs(orderID, userID).
 			WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
 		err = repo.CreateOrder(ctx, orderID, userID, status)
@@ -71,7 +71,7 @@ func TestRepository_CreateOrder(t *testing.T) {
 		status := entities.OrdersStatusProcessing
 
 		expectedSQL := `INSERT INTO public.orders (order_id, user_id, status)
-        VALUES ($1, $2, $3)
+        VALUES ($1, $2, 'PROCESSING')
         RETURNING orders.id AS "id";`
 
 		mock.ExpectQuery(expectedSQL).
@@ -564,15 +564,16 @@ func TestRepository_FindStaleOrders(t *testing.T) {
 
 		expectedSQL := `SELECT orders.order_id AS "orders.order_id"
         FROM public.orders
-        WHERE (orders.status IN ($1::text, $2::text)) AND (orders.created_at < $3::timestamp with time zone)
-        LIMIT $4;`
+        WHERE (orders.status IN ('NEW', 'PROCESSING')) AND (orders.created_at < $1::timestamp with time zone)
+        ORDER BY orders.created_at ASC
+        LIMIT $2;`
 
 		rows := sqlmock.NewRows([]string{"orders.order_id"}).
 			AddRow("12345678903").
 			AddRow("123456789015")
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs("NEW", "PROCESSING", sqlmock.AnyArg(), limit).
+			WithArgs(sqlmock.AnyArg(), limit).
 			WillReturnRows(rows)
 
 		result, err := repo.FindStaleOrders(ctx, statuses, limit)
@@ -604,11 +605,12 @@ func TestRepository_FindStaleOrders(t *testing.T) {
 
 		expectedSQL := `SELECT orders.order_id AS "orders.order_id"
         FROM public.orders
-        WHERE (orders.status IN ($1::text, $2::text)) AND (orders.created_at < $3::timestamp with time zone)
-        LIMIT $4;`
+        WHERE (orders.status IN ('NEW', 'PROCESSING')) AND (orders.created_at < $1::timestamp with time zone)
+        ORDER BY orders.created_at ASC
+        LIMIT $2;`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs("NEW", "PROCESSING", sqlmock.AnyArg(), limit).
+			WithArgs(sqlmock.AnyArg(), limit).
 			WillReturnError(qrm.ErrNoRows)
 
 		result, err := repo.FindStaleOrders(ctx, statuses, limit)
@@ -641,11 +643,12 @@ func TestRepository_FindStaleOrders(t *testing.T) {
 
 		expectedSQL := `SELECT orders.order_id AS "orders.order_id"
         FROM public.orders
-        WHERE (orders.status IN ($1::text, $2::text)) AND (orders.created_at < $3::timestamp with time zone)
-        LIMIT $4;`
+        WHERE (orders.status IN ('NEW', 'PROCESSING')) AND (orders.created_at < $1::timestamp with time zone)
+        ORDER BY orders.created_at ASC
+        LIMIT $2;`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs("NEW", "PROCESSING", sqlmock.AnyArg(), limit).
+			WithArgs(sqlmock.AnyArg(), limit).
 			WillReturnError(errorDB)
 
 		result, err := repo.FindStaleOrders(ctx, statuses, limit)
