@@ -6,7 +6,6 @@ import (
 
 	appMocks "github.com/bazueva/gofermart/internal/app/mocks"
 	"github.com/bazueva/gofermart/internal/context"
-	contextPkg "github.com/bazueva/gofermart/internal/context"
 	"github.com/bazueva/gofermart/internal/domain/entities"
 	"github.com/bazueva/gofermart/internal/domain/pagination"
 	"github.com/bazueva/gofermart/internal/interfaces/mocks"
@@ -269,7 +268,7 @@ func TestApp_UserOrdersList(t *testing.T) {
 		mockOrderService := appMocks.NewMockOrderService(t)
 
 		userID := int32(123)
-		ctx := contextPkg.NewAuth(t.Context()).WithUserID(userID)
+		ctx := context.NewAuth(t.Context()).WithUserID(userID)
 
 		page := int32(1)
 		perPage := int32(20)
@@ -326,7 +325,7 @@ func TestApp_UserOrdersList(t *testing.T) {
 		mockOrderService := appMocks.NewMockOrderService(t)
 
 		userID := int32(123)
-		ctx := contextPkg.NewAuth(t.Context()).WithUserID(userID)
+		ctx := context.NewAuth(t.Context()).WithUserID(userID)
 		page := int32(1)
 		perPage := int32(20)
 
@@ -356,7 +355,7 @@ func TestApp_UserIDFromContext(t *testing.T) {
 
 	t.Run("success - get userID from context", func(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
-		ctx := contextPkg.NewAuth(t.Context()).WithUserID(123)
+		ctx := context.NewAuth(t.Context()).WithUserID(123)
 
 		a := &app{
 			logger: logger,
@@ -370,7 +369,7 @@ func TestApp_UserIDFromContext(t *testing.T) {
 
 	t.Run("success - userID 0 with errorIfEmpty false", func(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
-		ctx := contextPkg.NewAuth(t.Context()).WithUserID(0)
+		ctx := context.NewAuth(t.Context()).WithUserID(0)
 
 		a := &app{
 			logger: logger,
@@ -402,7 +401,7 @@ func TestApp_UserIDFromContext(t *testing.T) {
 
 	t.Run("error - userID 0 with errorIfEmpty true", func(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
-		ctx := contextPkg.NewAuth(t.Context()).WithUserID(0)
+		ctx := context.NewAuth(t.Context()).WithUserID(0)
 
 		a := &app{
 			logger: logger,
