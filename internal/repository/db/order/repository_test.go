@@ -10,6 +10,7 @@ import (
 	"github.com/bazueva/gofermart/internal/domain/entities"
 	"github.com/bazueva/gofermart/internal/helpers"
 	"github.com/bazueva/gofermart/internal/interfaces/mocks"
+	"github.com/bazueva/gofermart/schema.gen/gofermart/public/model"
 	"github.com/go-jet/jet/v2/qrm"
 	"github.com/stretchr/testify/assert"
 	mock2 "github.com/stretchr/testify/mock"
@@ -42,7 +43,7 @@ func TestRepository_CreateOrder(t *testing.T) {
         RETURNING orders.id AS "id";`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(orderID, userID, hydrateDomainToOrdersStatus(status)).
+			WithArgs(orderID, userID, hydrateDomainToOrdersStatusEnum(status)).
 			WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
 		err = repo.CreateOrder(ctx, orderID, userID, status)
@@ -74,7 +75,7 @@ func TestRepository_CreateOrder(t *testing.T) {
         RETURNING orders.id AS "id";`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(orderID, userID, hydrateDomainToOrdersStatus(status)).
+			WithArgs(orderID, userID, hydrateDomainToOrdersStatusEnum(status)).
 			WillReturnError(errorDB)
 
 		err = repo.CreateOrder(ctx, orderID, userID, status)
@@ -105,7 +106,7 @@ func TestRepository_CreateOrder(t *testing.T) {
 		expectedSQL := `INSERT INTO orders (order_id, user_id, status) VALUES ($1, $2, $3) RETURNING id`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(orderID, userID, hydrateDomainToOrdersStatus(status)).
+			WithArgs(orderID, userID, hydrateDomainToOrdersStatusEnum(status)).
 			WillReturnError(context.DeadlineExceeded)
 
 		err = repo.CreateOrder(ctx, orderID, userID, status)
@@ -535,6 +536,289 @@ func TestRepository_FindByUserID(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
+		assert.IsType(t, &entities.DomainError{}, err)
+		assert.Equal(t, entities.InternalServerErrorType, err.(*entities.DomainError).ErrorType)
+	})
+}
+
+func TestRepository_FindStaleOrders(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - find stale orders", func(t *testing.T) {
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer func() {
+			_ = db.Close()
+		}()
+
+		logger := mocks.NewMockLogger(t)
+
+		repo := NewRepository(db, logger)
+		ctx := t.Context()
+
+		statuses := []entities.OrderStatus{
+			entities.OrdersStatusNew,
+			entities.OrdersStatusProcessing,
+		}
+		limit := int64(10)
+
+		expectedSQL := `SELECT orders.order_id AS "orders.order_id"
+        FROM public.orders
+        WHERE (orders.status IN ($1::text, $2::text)) AND (orders.created_at < $3::timestamp with time zone)
+        LIMIT $4;`
+
+		rows := sqlmock.NewRows([]string{"orders.order_id"}).
+			AddRow("12345678903").
+			AddRow("123456789015")
+
+		mock.ExpectQuery(expectedSQL).
+			WithArgs("NEW", "PROCESSING", sqlmock.AnyArg(), limit).
+			WillReturnRows(rows)
+
+		result, err := repo.FindStaleOrders(ctx, statuses, limit)
+
+		assert.Nil(t, err)
+		assert.NotNil(t, result)
+		assert.Len(t, result, 2)
+		assert.Equal(t, "12345678903", result[0])
+		assert.Equal(t, "123456789015", result[1])
+	})
+
+	t.Run("success - no stale orders found", func(t *testing.T) {
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer func() {
+			_ = db.Close()
+		}()
+
+		logger := mocks.NewMockLogger(t)
+
+		repo := NewRepository(db, logger)
+		ctx := t.Context()
+
+		statuses := []entities.OrderStatus{
+			entities.OrdersStatusNew,
+			entities.OrdersStatusProcessing,
+		}
+		limit := int64(10)
+
+		expectedSQL := `SELECT orders.order_id AS "orders.order_id"
+        FROM public.orders
+        WHERE (orders.status IN ($1::text, $2::text)) AND (orders.created_at < $3::timestamp with time zone)
+        LIMIT $4;`
+
+		mock.ExpectQuery(expectedSQL).
+			WithArgs("NEW", "PROCESSING", sqlmock.AnyArg(), limit).
+			WillReturnError(qrm.ErrNoRows)
+
+		result, err := repo.FindStaleOrders(ctx, statuses, limit)
+
+		assert.Nil(t, err)
+		assert.Empty(t, result)
+	})
+
+	t.Run("error - database error", func(t *testing.T) {
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer func() {
+			_ = db.Close()
+		}()
+
+		errorDB := errors.New("database connection failed")
+
+		logger := mocks.NewMockLogger(t)
+		logger.EXPECT().
+			Error("error repository FindStaleOrders", mock2.Anything)
+
+		repo := NewRepository(db, logger)
+		ctx := t.Context()
+
+		statuses := []entities.OrderStatus{
+			entities.OrdersStatusNew,
+			entities.OrdersStatusProcessing,
+		}
+		limit := int64(10)
+
+		expectedSQL := `SELECT orders.order_id AS "orders.order_id"
+        FROM public.orders
+        WHERE (orders.status IN ($1::text, $2::text)) AND (orders.created_at < $3::timestamp with time zone)
+        LIMIT $4;`
+
+		mock.ExpectQuery(expectedSQL).
+			WithArgs("NEW", "PROCESSING", sqlmock.AnyArg(), limit).
+			WillReturnError(errorDB)
+
+		result, err := repo.FindStaleOrders(ctx, statuses, limit)
+
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.IsType(t, &entities.DomainError{}, err)
+		assert.Equal(t, entities.InternalServerErrorType, err.(*entities.DomainError).ErrorType)
+	})
+
+	t.Run("context timeout", func(t *testing.T) {
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer func() {
+			_ = db.Close()
+		}()
+
+		logger := mocks.NewMockLogger(t)
+		logger.EXPECT().Error("error repository FindStaleOrders", mock2.Anything)
+
+		repo := NewRepository(db, logger)
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+
+		statuses := []entities.OrderStatus{
+			entities.OrdersStatusNew,
+			entities.OrdersStatusProcessing,
+		}
+		limit := int64(10)
+
+		expectedSQL := `SELECT orders.order_id AS "orders.order_id"
+        FROM public.orders
+        WHERE (orders.status IN ($1::text, $2::text)) AND (orders.created_at < $3::timestamp with time zone)
+        LIMIT $4;`
+
+		mock.ExpectQuery(expectedSQL).
+			WithArgs("NEW", "PROCESSING", sqlmock.AnyArg(), limit).
+			WillReturnError(context.DeadlineExceeded)
+
+		result, err := repo.FindStaleOrders(ctx, statuses, limit)
+
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.IsType(t, &entities.DomainError{}, err)
+		assert.Equal(t, entities.InternalServerErrorType, err.(*entities.DomainError).ErrorType)
+	})
+}
+
+func TestRepository_UpdateStatusAndBonus(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - update status and bonus", func(t *testing.T) {
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer func() {
+			_ = db.Close()
+		}()
+
+		logger := mocks.NewMockLogger(t)
+
+		repo := NewRepository(db, logger)
+		ctx := t.Context()
+
+		orderID := "12345678903"
+		status := entities.OrdersStatusProcessed
+		sum := int32(100)
+
+		expectedSQL := `UPDATE public.orders
+        SET (status, bonus_sum, updated_at, processed_at) = ($1, $2, $3, $4)
+        WHERE orders.order_id = $5::text;`
+
+		mock.ExpectExec(expectedSQL).
+			WithArgs(model.OrdersStatus_Processed, sum, sqlmock.AnyArg(), sqlmock.AnyArg(), orderID).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+
+		err = repo.UpdateStatusAndBonus(ctx, orderID, status, sum)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("success - update status invalid and bonus", func(t *testing.T) {
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer func() {
+			_ = db.Close()
+		}()
+
+		logger := mocks.NewMockLogger(t)
+
+		repo := NewRepository(db, logger)
+		ctx := t.Context()
+
+		orderID := "12345678903"
+		status := entities.OrdersStatusInvalid
+		sum := int32(100)
+
+		expectedSQL := `UPDATE public.orders
+        SET (status, bonus_sum, updated_at) = ($1, $2, $3)
+        WHERE orders.order_id = $4::text;`
+
+		mock.ExpectExec(expectedSQL).
+			WithArgs(model.OrdersStatus_Invalid, sum, sqlmock.AnyArg(), orderID).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+
+		err = repo.UpdateStatusAndBonus(ctx, orderID, status, sum)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("error - database error", func(t *testing.T) {
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer func() {
+			_ = db.Close()
+		}()
+
+		errorDB := errors.New("database connection failed")
+
+		logger := mocks.NewMockLogger(t)
+		logger.EXPECT().
+			Error("error repository UpdateStatusAndBonus", mock2.Anything)
+
+		repo := NewRepository(db, logger)
+		ctx := t.Context()
+
+		orderID := "12345678903"
+		status := entities.OrdersStatusProcessed
+		sum := int32(100)
+
+		expectedSQL := `UPDATE public.orders
+        SET (status, bonus_sum, updated_at, processed_at) = ($1, $2, $3, $4)
+        WHERE orders.order_id = $5::text;`
+
+		mock.ExpectExec(expectedSQL).
+			WithArgs("PROCESSED", sum, sqlmock.AnyArg(), orderID).
+			WillReturnError(errorDB)
+
+		err = repo.UpdateStatusAndBonus(ctx, orderID, status, sum)
+
+		assert.Error(t, err)
+		assert.IsType(t, &entities.DomainError{}, err)
+		assert.Equal(t, entities.InternalServerErrorType, err.(*entities.DomainError).ErrorType)
+	})
+
+	t.Run("context timeout", func(t *testing.T) {
+		db, mock, err := helpers.SqlMockTest(t)
+		require.NoError(t, err)
+		defer func() {
+			_ = db.Close()
+		}()
+
+		logger := mocks.NewMockLogger(t)
+		logger.EXPECT().Error("error repository UpdateStatusAndBonus", mock2.Anything)
+
+		repo := NewRepository(db, logger)
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+
+		orderID := "12345678903"
+		status := entities.OrdersStatusProcessed
+		sum := int32(100)
+
+		expectedSQL := `UPDATE public.orders
+        SET (status, bonus_sum, updated_at, processed_at) = ($1, $2, $3, $4)
+        WHERE orders.order_id = $5::text;`
+
+		mock.ExpectExec(expectedSQL).
+			WithArgs("PROCESSED", sum, orderID).
+			WillReturnError(context.DeadlineExceeded)
+
+		err = repo.UpdateStatusAndBonus(ctx, orderID, status, sum)
+
+		assert.Error(t, err)
 		assert.IsType(t, &entities.DomainError{}, err)
 		assert.Equal(t, entities.InternalServerErrorType, err.(*entities.DomainError).ErrorType)
 	})

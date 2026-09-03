@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -9,6 +11,7 @@ import (
 	"github.com/bazueva/gofermart/internal/app"
 	handlerPkg "github.com/bazueva/gofermart/internal/handler"
 	"github.com/bazueva/gofermart/internal/middleware"
+	"github.com/bazueva/gofermart/internal/repository/bonus"
 	"github.com/bazueva/gofermart/internal/repository/db/order"
 	"github.com/bazueva/gofermart/internal/repository/db/user"
 	orderService "github.com/bazueva/gofermart/internal/service/order"
@@ -55,11 +58,28 @@ func main() {
 }
 
 func startServer(cfg config, db *sql.DB) {
+	/* http repo */
+	bonusRepository, err := bonus.NewRepository(
+		fmt.Sprintf("http://%s", cfg.AccrualSystemAddress.String()),
+		cfg.logger,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	/* DB repo */
 	userRepository := user.NewRepository(db, cfg.logger)
 	orderRepository := order.NewRepository(db, cfg.logger)
 
+	/* workers */
+	ctx := context.Background()
+	orderProcessor := orderService.NewOrderProcessor(bonusRepository, orderRepository, cfg.logger)
+	orderProcessor.Start(ctx)
+	orderProcessor.StartDatabasePoller(ctx)
+
+	/* services */
 	userService := userService.NewUserService(userRepository, cfg.logger, cfg.SecretKey)
-	orderService := orderService.NewOrder(orderRepository)
+	orderService := orderService.NewOrder(orderRepository, orderProcessor, cfg.logger)
 
 	var application = app.NewApp(userService, orderService, cfg.logger)
 	handler := handlerPkg.NewHandler(cfg.logger, application)
@@ -82,6 +102,8 @@ func startServer(cfg config, db *sql.DB) {
 		Addr:    cfg.ServerAddr.String(),
 		Handler: router,
 	}
+
+	cfg.logger.Info("Сервер запущен по адресу", zap.String("addr", server.Addr))
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		cfg.logger.Error("Ошибка сервера", zap.Error(err))

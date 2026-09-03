@@ -19,6 +19,8 @@ const (
 	UnauthorizedErrorType
 	UnprocessableEntityErrorType
 	OkEntityErrorType
+	NoContentErrorType
+	RetriableErrorType
 )
 
 func (e *DomainError) Error() string {
@@ -68,6 +70,22 @@ func NewConflictError(err error, text string) *DomainError {
 func NewBadRequestError(err error, text string) *DomainError {
 	return &DomainError{
 		ErrorType: BadRequestErrorType,
+		SourceErr: err,
+		Text:      text,
+	}
+}
+
+func NewNoContentError(err error, text string) *DomainError {
+	return &DomainError{
+		ErrorType: NoContentErrorType,
+		SourceErr: err,
+		Text:      text,
+	}
+}
+
+func NewRetriableError(err error, text string) *DomainError {
+	return &DomainError{
+		ErrorType: RetriableErrorType,
 		SourceErr: err,
 		Text:      text,
 	}

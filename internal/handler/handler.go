@@ -174,10 +174,16 @@ func (h *handler) UserOrdersList(writer http.ResponseWriter, request *http.Reque
 	result := make([]models.Order, len(orders))
 	for i, order := range orders {
 		result[i] = models.Order{
-			Number:     order.OrderID,
-			Status:     string(order.Status),
-			Accrual:    0,
-			UploadedAt: order.CreatedAt.Format("2006-01-02T15:04:05-07:00"),
+			Number:  order.OrderID,
+			Status:  string(order.Status),
+			Accrual: 0,
+			UploadedAt: func() string {
+				if order.ProcessedAt != nil {
+					return order.ProcessedAt.Format("2006-01-02T15:04:05-07:00")
+				}
+
+				return ""
+			}(),
 		}
 	}
 

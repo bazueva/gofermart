@@ -11,9 +11,10 @@ import (
 )
 
 type config struct {
-	ServerAddr  configpkg.ServerAddr `env:"RUN_ADDRESS"`
-	DatabaseDSN string               `env:"DATABASE_URI"`
-	SecretKey   string               `env:"SECRET_KEY"`
+	ServerAddr           configpkg.ServerAddr `env:"RUN_ADDRESS"`
+	DatabaseDSN          string               `env:"DATABASE_URI"`
+	SecretKey            string               `env:"SECRET_KEY"`
+	AccrualSystemAddress configpkg.ServerAddr `env:"ACCRUAL_SYSTEM_ADDRESS"`
 
 	logger *zap.Logger
 }
@@ -44,6 +45,7 @@ func parseFlags(config *config) error {
 	serverFlags.Var(&config.ServerAddr, "a", "address http server")
 	serverFlags.StringVar(&config.DatabaseDSN, "d", "", "Database DSN")
 	serverFlags.StringVar(&config.SecretKey, "s", "", "Secret Key")
+	serverFlags.Var(&config.AccrualSystemAddress, "r", "accrual system address")
 
 	if len(os.Args) > 1 {
 		err := serverFlags.Parse(os.Args[1:])
