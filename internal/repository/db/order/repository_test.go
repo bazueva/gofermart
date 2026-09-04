@@ -382,7 +382,9 @@ func TestRepository_FindByUserID(t *testing.T) {
              orders.order_id AS "orders.order_id",
              orders.status AS "orders.status",
              orders.user_id AS "orders.user_id",
-             orders.created_at AS "orders.created_at"
+             orders.created_at AS "orders.created_at",
+             orders.processed_at AS "orders.processed_at",
+             orders.bonus_sum AS "orders.bonus_sum"
         FROM public.orders
         WHERE orders.user_id = $1::integer
         ORDER BY orders.created_at DESC
@@ -439,7 +441,9 @@ func TestRepository_FindByUserID(t *testing.T) {
              orders.order_id AS "orders.order_id",
              orders.status AS "orders.status",
              orders.user_id AS "orders.user_id",
-             orders.created_at AS "orders.created_at"
+             orders.created_at AS "orders.created_at",
+             orders.processed_at AS "orders.processed_at",
+             orders.bonus_sum AS "orders.bonus_sum"
         FROM public.orders
         WHERE orders.user_id = $1::integer
         ORDER BY orders.created_at DESC
@@ -480,7 +484,9 @@ func TestRepository_FindByUserID(t *testing.T) {
              orders.order_id AS "orders.order_id",
              orders.status AS "orders.status",
              orders.user_id AS "orders.user_id",
-             orders.created_at AS "orders.created_at"
+             orders.created_at AS "orders.created_at",
+             orders.processed_at AS "orders.processed_at",
+             orders.bonus_sum AS "orders.bonus_sum"
         FROM public.orders
         WHERE orders.user_id = $1::integer
         ORDER BY orders.created_at DESC
