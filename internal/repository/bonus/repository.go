@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/bazueva/gofermart/internal/domain/entities"
@@ -30,6 +31,7 @@ func (r *repository) GetOrder(ctx context.Context, orderID string) (*entities.Or
 	url := fmt.Sprintf("%s/api/orders/%s", r.addr, orderID)
 
 	response, err := r.client.R().
+		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
 		Get(url)
 	if err != nil {
@@ -109,17 +111,31 @@ func createClient(logger interfaces.Logger) *resty.Client {
 	return resty.New().
 		SetRetryCount(3).
 		SetRetryAfter(func(client *resty.Client, response *resty.Response) (time.Duration, error) {
+			if response != nil && response.StatusCode() == http.StatusTooManyRequests {
+				if retryAfterHeader := response.Header().Get("Retry-After"); retryAfterHeader != "" {
+					if seconds, err := strconv.Atoi(retryAfterHeader); err == nil && seconds > 0 {
+						logger.Warn("Сервер ответил 429. Ждем согласно Retry-After",
+							zap.Int("seconds", seconds),
+							zap.String("url", response.Request.URL),
+						)
+
+						return time.Duration(seconds) * time.Second, nil
+					}
+				}
+			}
+
 			attempt := response.Request.Attempt
-			delay := time.Duration(2*attempt-1) * time.Second
 
-			logger.Info("Попытка повторного запроса",
-				zap.Int("attempt", attempt),
-				zap.Duration("delay", delay),
-				zap.String("time", time.Now().Format("15:04:05")),
-			)
-
-			return delay, nil
+			return time.Duration(2*attempt-1) * time.Second, nil
 		}).
+		AddRetryCondition(func(r *resty.Response, err error) bool {
+			if err != nil {
+				return true
+			}
+
+			return r.StatusCode() == http.StatusTooManyRequests
+		}).
+		SetRetryWaitTime(1 * time.Second).
 		SetRetryMaxWaitTime(5 * time.Second).
 		AddRetryHook(
 			func(r *resty.Response, err error) {
