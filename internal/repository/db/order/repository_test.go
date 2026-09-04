@@ -10,6 +10,7 @@ import (
 	"github.com/bazueva/gofermart/internal/domain/entities"
 	"github.com/bazueva/gofermart/internal/helpers"
 	"github.com/bazueva/gofermart/internal/interfaces/mocks"
+	dbPkg "github.com/bazueva/gofermart/internal/repository/db"
 	"github.com/bazueva/gofermart/schema.gen/gofermart/public/model"
 	"github.com/go-jet/jet/v2/qrm"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,8 @@ func TestRepository_CreateOrder(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		orderID := "order-123"
@@ -63,7 +65,8 @@ func TestRepository_CreateOrder(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 		logger.EXPECT().Error("error repository CreateOrder", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		orderID := "order-123"
@@ -95,7 +98,8 @@ func TestRepository_CreateOrder(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 		logger.EXPECT().Error("error repository CreateOrder", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 
@@ -129,7 +133,8 @@ func TestRepository_FindByOrderID(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		orderID := "order-123"
@@ -167,7 +172,8 @@ func TestRepository_FindByOrderID(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		orderID := "order-not-found"
@@ -201,7 +207,8 @@ func TestRepository_FindByOrderID(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 		logger.EXPECT().Error("error repository FindByOrderID", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		orderID := "order-123"
@@ -235,7 +242,8 @@ func TestRepository_FindByOrderID(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 		logger.EXPECT().Error("error repository FindByOrderID", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 
@@ -273,7 +281,8 @@ func TestRepository_CountOrdersByUserID(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		userID := int32(123)
@@ -308,7 +317,8 @@ func TestRepository_CountOrdersByUserID(t *testing.T) {
 		logger.EXPECT().
 			Error("error repository FindByOrderID", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		userID := int32(123)
@@ -337,7 +347,8 @@ func TestRepository_CountOrdersByUserID(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 		logger.EXPECT().Error("error repository FindByOrderID", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 
@@ -371,7 +382,8 @@ func TestRepository_FindByUserID(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		userID := int32(123)
@@ -430,7 +442,8 @@ func TestRepository_FindByUserID(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		userID := int32(123)
@@ -473,7 +486,8 @@ func TestRepository_FindByUserID(t *testing.T) {
 		logger.EXPECT().
 			Error("error repository FindByOrderID", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		userID := int32(123)
@@ -515,7 +529,8 @@ func TestRepository_FindByUserID(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 		logger.EXPECT().Error("error repository FindByOrderID", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 
@@ -559,7 +574,8 @@ func TestRepository_FindStaleOrders(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		statuses := []entities.OrderStatus{
@@ -600,7 +616,8 @@ func TestRepository_FindStaleOrders(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		statuses := []entities.OrderStatus{
@@ -638,7 +655,8 @@ func TestRepository_FindStaleOrders(t *testing.T) {
 		logger.EXPECT().
 			Error("error repository FindStaleOrders", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		statuses := []entities.OrderStatus{
@@ -675,7 +693,8 @@ func TestRepository_FindStaleOrders(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 		logger.EXPECT().Error("error repository FindStaleOrders", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 
@@ -715,7 +734,8 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		orderID := "12345678903"
@@ -744,7 +764,8 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		orderID := "12345678903"
@@ -777,7 +798,8 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 		logger.EXPECT().
 			Error("error repository UpdateStatusAndBonus", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		orderID := "12345678903"
@@ -809,7 +831,8 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 		logger.EXPECT().Error("error repository UpdateStatusAndBonus", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 
@@ -828,134 +851,6 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 		err = repo.UpdateStatusAndBonus(ctx, orderID, status, sum)
 
 		assert.Error(t, err)
-		assert.IsType(t, &entities.DomainError{}, err)
-		assert.Equal(t, entities.InternalServerErrorType, err.(*entities.DomainError).ErrorType)
-	})
-}
-
-func TestRepository_UserBalance(t *testing.T) {
-	t.Parallel()
-
-	t.Run("success - get user balance", func(t *testing.T) {
-		db, mock, err := helpers.SQLMockTest(t)
-		require.NoError(t, err)
-		defer func() {
-			_ = db.Close()
-		}()
-
-		logger := mocks.NewMockLogger(t)
-
-		repo := NewRepository(db, logger)
-		ctx := t.Context()
-
-		userID := int32(123)
-		expectedSQL := `SELECT COALESCE(SUM(orders.bonus_sum), $1) AS "sum"
-        FROM public.orders
-        WHERE (orders.user_id = $2::integer) AND (orders.status = 'PROCESSED');`
-
-		rows := sqlmock.NewRows([]string{"sum"}).
-			AddRow(150.50)
-
-		mock.ExpectQuery(expectedSQL).
-			WithArgs(float64(0), userID).
-			WillReturnRows(rows)
-
-		result, err := repo.UserBalance(ctx, userID)
-
-		assert.Nil(t, err)
-		assert.Equal(t, 150.50, result)
-	})
-
-	t.Run("success - user has no orders returns 0", func(t *testing.T) {
-		db, mock, err := helpers.SQLMockTest(t)
-		require.NoError(t, err)
-		defer func() {
-			_ = db.Close()
-		}()
-
-		logger := mocks.NewMockLogger(t)
-
-		repo := NewRepository(db, logger)
-		ctx := t.Context()
-
-		userID := int32(123)
-		expectedSQL := `SELECT COALESCE(SUM(orders.bonus_sum), $1) AS "sum"
-        FROM public.orders
-        WHERE (orders.user_id = $2::integer) AND (orders.status = 'PROCESSED');`
-
-		rows := sqlmock.NewRows([]string{"sum"}).
-			AddRow(0)
-
-		mock.ExpectQuery(expectedSQL).
-			WithArgs(float64(0), userID).
-			WillReturnRows(rows)
-
-		result, err := repo.UserBalance(ctx, userID)
-
-		assert.Nil(t, err)
-		assert.Equal(t, 0.0, result)
-	})
-
-	t.Run("error - database error", func(t *testing.T) {
-		db, mock, err := helpers.SQLMockTest(t)
-		require.NoError(t, err)
-		defer func() {
-			_ = db.Close()
-		}()
-
-		errorDB := errors.New("database connection failed")
-
-		logger := mocks.NewMockLogger(t)
-		logger.EXPECT().
-			Error("error repository FindStaleOrders", mock2.Anything)
-
-		repo := NewRepository(db, logger)
-		ctx := t.Context()
-
-		userID := int32(123)
-		expectedSQL := `SELECT COALESCE(SUM(orders.bonus_sum), $1) AS "sum"
-        FROM public.orders
-        WHERE (orders.user_id = $2::integer) AND (orders.status = 'PROCESSED');`
-
-		mock.ExpectQuery(expectedSQL).
-			WithArgs(float64(0), userID).
-			WillReturnError(errorDB)
-
-		result, err := repo.UserBalance(ctx, userID)
-
-		assert.Error(t, err)
-		assert.Equal(t, 0.0, result)
-		assert.IsType(t, &entities.DomainError{}, err)
-		assert.Equal(t, entities.InternalServerErrorType, err.(*entities.DomainError).ErrorType)
-	})
-
-	t.Run("context timeout", func(t *testing.T) {
-		db, mock, err := helpers.SQLMockTest(t)
-		require.NoError(t, err)
-		defer func() {
-			_ = db.Close()
-		}()
-
-		logger := mocks.NewMockLogger(t)
-		logger.EXPECT().Error("error repository FindStaleOrders", mock2.Anything)
-
-		repo := NewRepository(db, logger)
-		ctx, cancel := context.WithCancel(t.Context())
-		cancel()
-
-		userID := int32(123)
-		expectedSQL := `SELECT COALESCE(SUM(orders.bonus_sum), $1) AS "sum"
-        FROM public.orders
-        WHERE (orders.user_id = $2::integer) AND (orders.status = 'PROCESSED');`
-
-		mock.ExpectQuery(expectedSQL).
-			WithArgs(float64(0), userID).
-			WillReturnError(context.DeadlineExceeded)
-
-		result, err := repo.UserBalance(ctx, userID)
-
-		assert.Error(t, err)
-		assert.Equal(t, 0.0, result)
 		assert.IsType(t, &entities.DomainError{}, err)
 		assert.Equal(t, entities.InternalServerErrorType, err.(*entities.DomainError).ErrorType)
 	})

@@ -9,6 +9,7 @@ import (
 	"github.com/bazueva/gofermart/internal/domain/entities"
 	"github.com/bazueva/gofermart/internal/helpers"
 	"github.com/bazueva/gofermart/internal/interfaces/mocks"
+	dbPkg "github.com/bazueva/gofermart/internal/repository/db"
 	"github.com/stretchr/testify/assert"
 	mock2 "github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -26,7 +27,8 @@ func TestRepository_ExistLogin(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		expectedSQL := `SELECT (EXISTS (
@@ -57,7 +59,8 @@ func TestRepository_ExistLogin(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		expectedSQL := `SELECT (EXISTS (
@@ -91,7 +94,8 @@ func TestRepository_ExistLogin(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 		logger.EXPECT().Error("error ExistLogin", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		expectedSQL := `SELECT (EXISTS (
@@ -122,7 +126,8 @@ func TestRepository_ExistLogin(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 		logger.EXPECT().Error("error ExistLogin", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 
@@ -157,7 +162,8 @@ func TestRepository_CreateUser(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		user := entities.User{
@@ -189,7 +195,8 @@ func TestRepository_CreateUser(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 		logger.EXPECT().Error("error repository CreateUser", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		user := entities.User{
@@ -223,7 +230,8 @@ func TestRepository_CreateUser(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 		logger.EXPECT().Error("error repository CreateUser", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
@@ -260,7 +268,8 @@ func TestRepository_FindByLogin(t *testing.T) {
 		defer db.Close()
 
 		logger := mocks.NewMockLogger(t)
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		expectedSQL := `SELECT users.id AS "users.id",
@@ -292,7 +301,8 @@ func TestRepository_FindByLogin(t *testing.T) {
 		defer db.Close()
 
 		logger := mocks.NewMockLogger(t)
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		expectedSQL := `SELECT users.id AS "users.id",
@@ -325,7 +335,8 @@ func TestRepository_FindByLogin(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 		logger.EXPECT().Error("error repository FindByLoginPassword", mock2.Anything)
 
-		repo := NewRepository(db, logger)
+		dbWrapper := dbPkg.NewSQLDBWrapper(db)
+		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
 		expectedSQL := `SELECT users.id AS "users.id",
