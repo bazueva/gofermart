@@ -7,6 +7,8 @@ import (
 	"github.com/bazueva/gofermart/internal/domain/entities"
 	"github.com/bazueva/gofermart/internal/domain/pagination"
 	"github.com/bazueva/gofermart/internal/helpers"
+	"github.com/bazueva/gofermart/internal/interfaces"
+	"go.uber.org/zap"
 )
 
 type Repository interface {
@@ -16,11 +18,17 @@ type Repository interface {
 	CountOrdersByUserID(ctx context.Context, userID int32) (int32, *entities.DomainError)
 }
 
-type order struct {
-	repository Repository
+type OrderQueue interface {
+	AddOrderIDToQueue(orderID string)
 }
 
-func (o *order) OrdersListUser(
+type Order struct {
+	repository Repository
+	logger     interfaces.Logger
+	orderQueue OrderQueue
+}
+
+func (o *Order) OrdersListUser(
 	ctx context.Context,
 	userID int32,
 	pagination *pagination.Pagination,
@@ -44,25 +52,27 @@ func (o *order) OrdersListUser(
 	return orders, nil
 }
 
-func (o *order) CreateOrder(ctx context.Context, orderID string, userID int32) *entities.DomainError {
+func (o *Order) CreateOrder(ctx context.Context, orderID string, userID int32) *entities.DomainError {
 	orderID = strings.Trim(orderID, " ")
 
-	err := o.validateOrderID(ctx, orderID, userID)
-	if err != nil {
-		return err
+	errDomain := o.validateOrderID(ctx, orderID, userID)
+	if errDomain != nil {
+		return errDomain
 	}
 
-	err = o.repository.CreateOrder(ctx, orderID, userID, entities.OrdersStatusNew)
-	if err != nil {
-		return err
+	errDomain = o.repository.CreateOrder(ctx, orderID, userID, entities.OrdersStatusNew)
+	if errDomain != nil {
+		return errDomain
 	}
 
-	// куда-то отправить на обработку orderID
+	o.orderQueue.AddOrderIDToQueue(orderID)
+
+	o.logger.Info("Заказ отправлен в очередь на обработку", zap.String("order_id", orderID))
 
 	return nil
 }
 
-func (o *order) validateOrderID(ctx context.Context, id string, userID int32) *entities.DomainError {
+func (o *Order) validateOrderID(ctx context.Context, id string, userID int32) *entities.DomainError {
 	if !helpers.ValidateLuhn(id) {
 		return entities.NewUnprocessableEntity(nil, "неверный формат номера заказа")
 	}
@@ -83,8 +93,14 @@ func (o *order) validateOrderID(ctx context.Context, id string, userID int32) *e
 	return nil
 }
 
-func NewOrder(repository Repository) *order {
-	return &order{
+func NewOrder(
+	repository Repository,
+	orderQueue OrderQueue,
+	logger interfaces.Logger,
+) *Order {
+	return &Order{
 		repository: repository,
+		logger:     logger,
+		orderQueue: orderQueue,
 	}
 }

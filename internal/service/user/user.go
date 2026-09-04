@@ -30,14 +30,14 @@ type Repository interface {
 	FindByLogin(ctx context.Context, login string) (entities.User, *entities.DomainError)
 }
 
-type userService struct {
+type UserService struct {
 	repository    Repository
 	formValidator *validator.Validate
 	logger        interfaces.Logger
 	secretKey     string
 }
 
-func (u *userService) CheckJWTToken(token string) (int32, *entities.DomainError) {
+func (u *UserService) CheckJWTToken(token string) (int32, *entities.DomainError) {
 	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		return []byte(u.secretKey), nil
 	})
@@ -67,7 +67,7 @@ func (u *userService) CheckJWTToken(token string) (int32, *entities.DomainError)
 	return userID, nil
 }
 
-func (u *userService) Login(ctx context.Context, loginForm forms.LoginForm) (string, *entities.DomainError) {
+func (u *UserService) Login(ctx context.Context, loginForm forms.LoginForm) (string, *entities.DomainError) {
 	errDomain := u.validateForm(loginForm)
 	if errDomain != nil {
 		return "", errDomain
@@ -97,7 +97,7 @@ func (u *userService) Login(ctx context.Context, loginForm forms.LoginForm) (str
 	return token, nil
 }
 
-func (u *userService) Register(ctx context.Context, userForm forms.UserForm) (string, *entities.DomainError) {
+func (u *UserService) Register(ctx context.Context, userForm forms.UserForm) (string, *entities.DomainError) {
 	errDomain := u.validateRegister(ctx, userForm)
 	if errDomain != nil {
 		return "", errDomain
@@ -118,7 +118,7 @@ func (u *userService) Register(ctx context.Context, userForm forms.UserForm) (st
 	return token, nil
 }
 
-func (u *userService) validateForm(form interface{}) *entities.DomainError {
+func (u *UserService) validateForm(form interface{}) *entities.DomainError {
 	err := u.formValidator.Struct(form)
 
 	validationErrors := entities.ConvertValidatorErrors(err)
@@ -133,7 +133,7 @@ func (u *userService) validateForm(form interface{}) *entities.DomainError {
 	return nil
 }
 
-func (u *userService) validateRegister(ctx context.Context, userForm forms.UserForm) *entities.DomainError {
+func (u *UserService) validateRegister(ctx context.Context, userForm forms.UserForm) *entities.DomainError {
 	errDomain := u.validateForm(userForm)
 	if errDomain != nil {
 		return errDomain
@@ -151,7 +151,7 @@ func (u *userService) validateRegister(ctx context.Context, userForm forms.UserF
 	return nil
 }
 
-func (u *userService) checkUniqueLogin(ctx context.Context, login string) (bool, *entities.DomainError) {
+func (u *UserService) checkUniqueLogin(ctx context.Context, login string) (bool, *entities.DomainError) {
 	exist, err := u.repository.ExistLogin(ctx, login)
 	if err != nil {
 		return false, err
@@ -160,7 +160,7 @@ func (u *userService) checkUniqueLogin(ctx context.Context, login string) (bool,
 	return exist, nil
 }
 
-func (u *userService) createUser(ctx context.Context, userForm forms.UserForm) (int32, *entities.DomainError) {
+func (u *UserService) createUser(ctx context.Context, userForm forms.UserForm) (int32, *entities.DomainError) {
 	hashPass, err := hashPassword(userForm.Password)
 	if err != nil {
 		u.logger.Error("error hash password", zap.Error(err))
@@ -179,7 +179,7 @@ func (u *userService) createUser(ctx context.Context, userForm forms.UserForm) (
 	return userID, nil
 }
 
-func (u *userService) generateJWTToken(userID int32) (string, error) {
+func (u *UserService) generateJWTToken(userID int32) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
 		"exp":     time.Now().Add(24 * time.Hour).Unix(),
@@ -191,8 +191,8 @@ func (u *userService) generateJWTToken(userID int32) (string, error) {
 	return tokenString, err
 }
 
-func NewUserService(repository Repository, logger interfaces.Logger, secretKey string) *userService {
-	service := &userService{
+func NewUserService(repository Repository, logger interfaces.Logger, secretKey string) *UserService {
+	service := &UserService{
 		logger:        logger,
 		repository:    repository,
 		formValidator: validator.New(validator.WithRequiredStructEnabled()),

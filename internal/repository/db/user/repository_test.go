@@ -18,7 +18,7 @@ func TestRepository_ExistLogin(t *testing.T) {
 	t.Parallel()
 
 	t.Run("exist login", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -49,7 +49,7 @@ func TestRepository_ExistLogin(t *testing.T) {
 	})
 
 	t.Run("not exist login", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -80,7 +80,7 @@ func TestRepository_ExistLogin(t *testing.T) {
 	})
 
 	t.Run("error", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -113,7 +113,7 @@ func TestRepository_ExistLogin(t *testing.T) {
 	})
 
 	t.Run("context timeout", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -149,7 +149,7 @@ func TestRepository_ExistLogin(t *testing.T) {
 
 func TestRepository_CreateUser(t *testing.T) {
 	t.Run("success create user", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -180,7 +180,7 @@ func TestRepository_CreateUser(t *testing.T) {
 	})
 
 	t.Run("error repository", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -214,7 +214,7 @@ func TestRepository_CreateUser(t *testing.T) {
 	})
 
 	t.Run("context timeout", func(t *testing.T) {
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer func() {
 			_ = db.Close()
@@ -255,7 +255,7 @@ func TestRepository_FindByLogin(t *testing.T) {
 	t.Run("success - user found", func(t *testing.T) {
 		t.Parallel()
 
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer db.Close()
 
@@ -287,7 +287,7 @@ func TestRepository_FindByLogin(t *testing.T) {
 	t.Run("user not found - returns empty user", func(t *testing.T) {
 		t.Parallel()
 
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer db.Close()
 
@@ -318,7 +318,7 @@ func TestRepository_FindByLogin(t *testing.T) {
 	t.Run("database error - returns internal error", func(t *testing.T) {
 		t.Parallel()
 
-		db, mock, err := helpers.SqlMockTest(t)
+		db, mock, err := helpers.SQLMockTest(t)
 		require.NoError(t, err)
 		defer db.Close()
 

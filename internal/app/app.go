@@ -28,13 +28,13 @@ type OrderService interface {
 	OrdersListUser(ctx context.Context, userID int32, pagination *pagination.Pagination) ([]entities.Order, *entities.DomainError)
 }
 
-type app struct {
+type App struct {
 	userService  UserService
 	orderService OrderService
 	logger       interfaces.Logger
 }
 
-func (a *app) UserOrdersList(ctx context.Context, page int32, perPage int32) ([]entities.Order, *entities.DomainError) {
+func (a *App) UserOrdersList(ctx context.Context, page int32, perPage int32) ([]entities.Order, *entities.DomainError) {
 	userID, err := a.userIDFromContext(ctx, true)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (a *app) UserOrdersList(ctx context.Context, page int32, perPage int32) ([]
 	return orders, nil
 }
 
-func (a *app) userIDFromContext(ctx context.Context, errorIfEmpty bool) (int32, *entities.DomainError) {
+func (a *App) userIDFromContext(ctx context.Context, errorIfEmpty bool) (int32, *entities.DomainError) {
 	contextAuth, ok := ctx.(*contextPkg.Auth)
 	if !ok {
 		err := errors.New("ctx without ctx.Auth")
@@ -65,7 +65,7 @@ func (a *app) userIDFromContext(ctx context.Context, errorIfEmpty bool) (int32, 
 	return userID, nil
 }
 
-func (a *app) CreateOrder(ctx context.Context, orderID string) *entities.DomainError {
+func (a *App) CreateOrder(ctx context.Context, orderID string) *entities.DomainError {
 	userID, err := a.userIDFromContext(ctx, true)
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func (a *app) CreateOrder(ctx context.Context, orderID string) *entities.DomainE
 	return nil
 }
 
-func (a *app) CheckJWTToken(token string) (int32, *entities.DomainError) {
+func (a *App) CheckJWTToken(token string) (int32, *entities.DomainError) {
 	userID, err := a.userService.CheckJWTToken(token)
 	if err != nil {
 		return 0, err
@@ -88,7 +88,7 @@ func (a *app) CheckJWTToken(token string) (int32, *entities.DomainError) {
 	return userID, nil
 }
 
-func (a *app) Login(ctx context.Context, request models.LoginRequest) (string, *entities.DomainError) {
+func (a *App) Login(ctx context.Context, request models.LoginRequest) (string, *entities.DomainError) {
 	tokenJWT, err := a.userService.Login(ctx, forms.LoginForm{
 		Login:    request.Login,
 		Password: request.Password,
@@ -101,7 +101,7 @@ func (a *app) Login(ctx context.Context, request models.LoginRequest) (string, *
 	return tokenJWT, nil
 }
 
-func (a *app) Register(ctx context.Context, request models.RegisterRequest) (string, *entities.DomainError) {
+func (a *App) Register(ctx context.Context, request models.RegisterRequest) (string, *entities.DomainError) {
 	tokenJWT, err := a.userService.Register(ctx, forms.UserForm{
 		Login:    request.Login,
 		Password: request.Password,
@@ -117,8 +117,8 @@ func NewApp(
 	userService UserService,
 	orderService OrderService,
 	logger interfaces.Logger,
-) *app {
-	return &app{
+) *App {
+	return &App{
 		userService:  userService,
 		orderService: orderService,
 		logger:       logger,

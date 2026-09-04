@@ -6,8 +6,10 @@ import (
 
 	"github.com/bazueva/gofermart/internal/domain/entities"
 	"github.com/bazueva/gofermart/internal/domain/pagination"
+	interfacesMocks "github.com/bazueva/gofermart/internal/interfaces/mocks"
 	"github.com/bazueva/gofermart/internal/service/order/mocks"
 	"github.com/stretchr/testify/assert"
+	mock2 "github.com/stretchr/testify/mock"
 )
 
 func TestOrder_CreateOrder(t *testing.T) {
@@ -15,6 +17,8 @@ func TestOrder_CreateOrder(t *testing.T) {
 
 	t.Run("success - create order", func(t *testing.T) {
 		mockRepo := mocks.NewMockRepository(t)
+		mockQueue := mocks.NewMockOrderQueue(t)
+		mockLogger := interfacesMocks.NewMockLogger(t)
 
 		ctx := t.Context()
 		orderID := "12345678903"
@@ -28,8 +32,14 @@ func TestOrder_CreateOrder(t *testing.T) {
 			Return(nil).
 			Once()
 
-		o := &order{
+		mockQueue.EXPECT().AddOrderIDToQueue(orderID)
+
+		mockLogger.EXPECT().Info("Заказ отправлен в очередь на обработку", mock2.Anything)
+
+		o := &Order{
 			repository: mockRepo,
+			orderQueue: mockQueue,
+			logger:     mockLogger,
 		}
 
 		err := o.CreateOrder(ctx, orderID, userID)
@@ -44,7 +54,7 @@ func TestOrder_CreateOrder(t *testing.T) {
 		orderID := "order-123"
 		userID := int32(123)
 
-		o := &order{
+		o := &Order{
 			repository: mockRepo,
 		}
 
@@ -69,7 +79,7 @@ func TestOrder_CreateOrder(t *testing.T) {
 		mockRepo.EXPECT().FindByOrderID(ctx, orderID).
 			Return(nil, domainErr)
 
-		o := &order{
+		o := &Order{
 			repository: mockRepo,
 		}
 
@@ -98,7 +108,7 @@ func TestOrder_CreateOrder(t *testing.T) {
 			CreateOrder(ctx, orderID, userID, entities.OrdersStatusNew).
 			Return(domainErr)
 
-		o := &order{
+		o := &Order{
 			repository: mockRepo,
 		}
 
@@ -123,7 +133,7 @@ func TestOrder_ValidateOrderID(t *testing.T) {
 			FindByOrderID(ctx, orderID).
 			Return(nil, nil)
 
-		o := &order{
+		o := &Order{
 			repository: mockRepo,
 		}
 
@@ -139,7 +149,7 @@ func TestOrder_ValidateOrderID(t *testing.T) {
 		orderID := "order-123"
 		userID := int32(123)
 
-		o := &order{
+		o := &Order{
 			repository: mockRepo,
 		}
 
@@ -165,7 +175,7 @@ func TestOrder_ValidateOrderID(t *testing.T) {
 			FindByOrderID(ctx, orderID).
 			Return(nil, domainErr)
 
-		o := &order{
+		o := &Order{
 			repository: mockRepo,
 		}
 
@@ -193,7 +203,7 @@ func TestOrder_ValidateOrderID(t *testing.T) {
 			FindByOrderID(ctx, orderID).
 			Return(existingOrder, nil)
 
-		o := &order{
+		o := &Order{
 			repository: mockRepo,
 		}
 
@@ -221,7 +231,7 @@ func TestOrder_ValidateOrderID(t *testing.T) {
 			FindByOrderID(ctx, orderID).
 			Return(existingOrder, nil)
 
-		o := &order{
+		o := &Order{
 			repository: mockRepo,
 		}
 
@@ -265,7 +275,7 @@ func TestOrder_OrdersListUser(t *testing.T) {
 			FindByUserID(ctx, userID, int64(20), int64(0)).
 			Return(expectedOrders, nil)
 
-		o := &order{
+		o := &Order{
 			repository: mockRepo,
 		}
 
@@ -286,7 +296,7 @@ func TestOrder_OrdersListUser(t *testing.T) {
 			CountOrdersByUserID(ctx, userID).
 			Return(int32(0), nil)
 
-		o := &order{
+		o := &Order{
 			repository: mockRepo,
 		}
 
@@ -312,7 +322,7 @@ func TestOrder_OrdersListUser(t *testing.T) {
 			CountOrdersByUserID(ctx, userID).
 			Return(int32(0), domainErr)
 
-		o := &order{
+		o := &Order{
 			repository: mockRepo,
 		}
 
@@ -343,7 +353,7 @@ func TestOrder_OrdersListUser(t *testing.T) {
 			FindByUserID(ctx, userID, pag.GetPerPage(), pag.GetOffset()).
 			Return(nil, domainErr)
 
-		o := &order{
+		o := &Order{
 			repository: mockRepo,
 		}
 

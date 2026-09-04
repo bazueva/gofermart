@@ -2,7 +2,9 @@ package order
 
 import (
 	"github.com/bazueva/gofermart/internal/domain/entities"
+	"github.com/bazueva/gofermart/schema.gen/gofermart/public/enum"
 	dbModel "github.com/bazueva/gofermart/schema.gen/gofermart/public/model"
+	"github.com/go-jet/jet/v2/postgres"
 )
 
 func hydrateOrdersStatusToDomain(status dbModel.OrdersStatus) entities.OrderStatus {
@@ -17,6 +19,21 @@ func hydrateOrdersStatusToDomain(status dbModel.OrdersStatus) entities.OrderStat
 		return entities.OrdersStatusProcessed
 	default:
 		return entities.OrdersStatusNew
+	}
+}
+
+func hydrateDomainToOrdersStatusEnum(status entities.OrderStatus) postgres.Expression {
+	switch status {
+	case entities.OrdersStatusNew:
+		return enum.OrdersStatus.New
+	case entities.OrdersStatusProcessing:
+		return enum.OrdersStatus.Processing
+	case entities.OrdersStatusInvalid:
+		return enum.OrdersStatus.Invalid
+	case entities.OrdersStatusProcessed:
+		return enum.OrdersStatus.Processed
+	default:
+		return enum.OrdersStatus.New
 	}
 }
 

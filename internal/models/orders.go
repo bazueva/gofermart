@@ -1,8 +1,8 @@
 package models
 
 type Order struct {
-	Number     string `json:"number"`
-	Status     string `json:"status"`
-	Accrual    int32  `json:"accrual,omitempty"`
-	UploadedAt string `json:"uploadedAt"`
+	Number     string  `json:"number"`
+	Status     string  `json:"status"`
+	Accrual    float64 `json:"accrual,omitempty"`
+	UploadedAt string  `json:"uploadedAt,omitempty"`
 }

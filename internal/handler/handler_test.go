@@ -38,7 +38,7 @@ func TestHandler_LoginUser(t *testing.T) {
 			Login(req.Context(), loginRequest).
 			Return(expectedToken, nil)
 
-		h := &handler{
+		h := &Handler{
 			app:    mockApp,
 			logger: logger,
 		}
@@ -61,7 +61,7 @@ func TestHandler_LoginUser(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/api/user/login", bytes.NewReader([]byte("{invalid json}")))
 		w := httptest.NewRecorder()
 
-		h := &handler{
+		h := &Handler{
 			app:    mockApp,
 			logger: logger,
 		}
@@ -98,7 +98,7 @@ func TestHandler_LoginUser(t *testing.T) {
 			Login(req.Context(), loginRequest).
 			Return("", domainErr)
 
-		h := &handler{
+		h := &Handler{
 			app:    mockApp,
 			logger: logger,
 		}
@@ -130,7 +130,7 @@ func TestHandler_LoginUser(t *testing.T) {
 			Login(req.Context(), loginRequest).
 			Return("", domainErr)
 
-		h := &handler{
+		h := &Handler{
 			app:    mockApp,
 			logger: logger,
 		}
@@ -163,7 +163,7 @@ func TestHandler_RegisterUser(t *testing.T) {
 			Register(req.Context(), registerRequest).
 			Return(expectedToken, nil)
 
-		h := &handler{
+		h := &Handler{
 			app:    mockApp,
 			logger: logger,
 		}
@@ -186,7 +186,7 @@ func TestHandler_RegisterUser(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/api/user/register", bytes.NewReader([]byte("{invalid json}")))
 		w := httptest.NewRecorder()
 
-		h := &handler{
+		h := &Handler{
 			app:    mockApp,
 			logger: logger,
 		}
@@ -218,7 +218,7 @@ func TestHandler_RegisterUser(t *testing.T) {
 			Register(req.Context(), registerRequest).
 			Return("", domainErr)
 
-		h := &handler{
+		h := &Handler{
 			app:    mockApp,
 			logger: logger,
 		}
@@ -250,7 +250,7 @@ func TestHandler_RegisterUser(t *testing.T) {
 			Register(req.Context(), registerRequest).
 			Return("", domainErr)
 
-		h := &handler{
+		h := &Handler{
 			app:    mockApp,
 			logger: logger,
 		}
@@ -276,7 +276,7 @@ func TestHandler_CreateOrder(t *testing.T) {
 			CreateOrder(req.Context(), orderID).
 			Return(nil)
 
-		h := &handler{
+		h := &Handler{
 			app:    mockApp,
 			logger: logger,
 		}
@@ -293,7 +293,7 @@ func TestHandler_CreateOrder(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/api/user/orders", bytes.NewReader([]byte("")))
 		w := httptest.NewRecorder()
 
-		h := &handler{
+		h := &Handler{
 			app:    mockApp,
 			logger: logger,
 		}
@@ -305,7 +305,7 @@ func TestHandler_CreateOrder(t *testing.T) {
 		assert.Nil(t, err)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
-		assert.Equal(t, "Не указан номер заказа", response["error"])
+		assert.Equal(t, "не указан номер заказа", response["error"])
 	})
 
 	t.Run("error - create order", func(t *testing.T) {
@@ -325,7 +325,7 @@ func TestHandler_CreateOrder(t *testing.T) {
 			CreateOrder(req.Context(), orderID).
 			Return(domainErr)
 
-		h := &handler{
+		h := &Handler{
 			app:    mockApp,
 			logger: logger,
 		}
@@ -361,7 +361,7 @@ func TestHandler_UserOrdersList(t *testing.T) {
 			UserOrdersList(req.Context(), int32(1), int32(20)).
 			Return(expectedOrders, nil)
 
-		h := &handler{
+		h := &Handler{
 			app:    mockApp,
 			logger: logger,
 		}
@@ -389,7 +389,7 @@ func TestHandler_UserOrdersList(t *testing.T) {
 			UserOrdersList(req.Context(), int32(1), int32(20)).
 			Return([]entities.Order{}, nil)
 
-		h := &handler{
+		h := &Handler{
 			app:    mockApp,
 			logger: logger,
 		}
@@ -415,7 +415,7 @@ func TestHandler_UserOrdersList(t *testing.T) {
 			UserOrdersList(req.Context(), int32(1), int32(20)).
 			Return(nil, domainErr)
 
-		h := &handler{
+		h := &Handler{
 			app:    mockApp,
 			logger: logger,
 		}

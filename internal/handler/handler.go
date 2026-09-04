@@ -21,19 +21,19 @@ type App interface {
 	UserOrdersList(ctx context.Context, page int32, perPage int32) ([]entities.Order, *entities.DomainError)
 }
 
-type handler struct {
+type Handler struct {
 	logger interfaces.Logger
 	app    App
 }
 
-func NewHandler(logger interfaces.Logger, application App) *handler {
-	return &handler{
+func NewHandler(logger interfaces.Logger, application App) *Handler {
+	return &Handler{
 		logger: logger,
 		app:    application,
 	}
 }
 
-func (h *handler) LoginUser(w http.ResponseWriter, request *http.Request) {
+func (h *Handler) LoginUser(w http.ResponseWriter, request *http.Request) {
 	defer func() {
 		if err := request.Body.Close(); err != nil {
 			h.logger.Error("body close error", zap.Error(err))
@@ -66,7 +66,7 @@ func (h *handler) LoginUser(w http.ResponseWriter, request *http.Request) {
 	})
 }
 
-func (h *handler) RegisterUser(w http.ResponseWriter, request *http.Request) {
+func (h *Handler) RegisterUser(w http.ResponseWriter, request *http.Request) {
 	defer func() {
 		if err := request.Body.Close(); err != nil {
 			h.logger.Error("body close error", zap.Error(err))
@@ -99,7 +99,7 @@ func (h *handler) RegisterUser(w http.ResponseWriter, request *http.Request) {
 	})
 }
 
-func (h *handler) errorHandler(writer http.ResponseWriter, err error, statusCode int) {
+func (h *Handler) errorHandler(writer http.ResponseWriter, err error, statusCode int) {
 	if domainError, ok := errors.AsType[*entities.DomainError](err); ok {
 		switch domainError.ErrorType {
 		case entities.ConflictErrorType:
@@ -124,7 +124,7 @@ func (h *handler) errorHandler(writer http.ResponseWriter, err error, statusCode
 	})
 }
 
-func (h *handler) CreateOrder(writer http.ResponseWriter, request *http.Request) {
+func (h *Handler) CreateOrder(writer http.ResponseWriter, request *http.Request) {
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
 		h.errorHandler(writer, err, http.StatusBadRequest)
@@ -138,7 +138,7 @@ func (h *handler) CreateOrder(writer http.ResponseWriter, request *http.Request)
 
 	orderID := string(body)
 	if orderID == "" {
-		h.errorHandler(writer, errors.New("Не указан номер заказа"), http.StatusBadRequest)
+		h.errorHandler(writer, errors.New("не указан номер заказа"), http.StatusBadRequest)
 
 		return
 	}
@@ -153,7 +153,7 @@ func (h *handler) CreateOrder(writer http.ResponseWriter, request *http.Request)
 	writer.WriteHeader(http.StatusAccepted)
 }
 
-func (h *handler) UserOrdersList(writer http.ResponseWriter, request *http.Request) {
+func (h *Handler) UserOrdersList(writer http.ResponseWriter, request *http.Request) {
 	orders, errDomain := h.app.UserOrdersList(
 		request.Context(),
 		cast.ToInt32(request.URL.Query().Get("page")),
@@ -174,14 +174,20 @@ func (h *handler) UserOrdersList(writer http.ResponseWriter, request *http.Reque
 	result := make([]models.Order, len(orders))
 	for i, order := range orders {
 		result[i] = models.Order{
-			Number:     order.OrderID,
-			Status:     string(order.Status),
-			Accrual:    0,
-			UploadedAt: order.CreatedAt.Format("2006-01-02T15:04:05-07:00"),
+			Number:  order.OrderID,
+			Status:  string(order.Status),
+			Accrual: order.BonusSum,
+			UploadedAt: func() string {
+				if order.ProcessedAt != nil {
+					return order.ProcessedAt.Format("2006-01-02T15:04:05-07:00")
+				}
+
+				return ""
+			}(),
 		}
 	}
 
-	resultJson, err := json.Marshal(result)
+	resultJSON, err := json.Marshal(result)
 	if err != nil {
 		h.logger.Error("error marshal []order", zap.Error(err))
 
@@ -190,5 +196,5 @@ func (h *handler) UserOrdersList(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	writer.Write(resultJson)
+	writer.Write(resultJSON)
 }

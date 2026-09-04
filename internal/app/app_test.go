@@ -6,7 +6,6 @@ import (
 
 	appMocks "github.com/bazueva/gofermart/internal/app/mocks"
 	"github.com/bazueva/gofermart/internal/context"
-	contextPkg "github.com/bazueva/gofermart/internal/context"
 	"github.com/bazueva/gofermart/internal/domain/entities"
 	"github.com/bazueva/gofermart/internal/domain/pagination"
 	"github.com/bazueva/gofermart/internal/interfaces/mocks"
@@ -96,7 +95,7 @@ func TestApp_CheckJWTToken_EdgeCases(t *testing.T) {
 			Return(int32(0), domainErr).
 			Once()
 
-		appMocks := &app{
+		appMocks := &App{
 			userService: mockUserService,
 		}
 
@@ -116,7 +115,7 @@ func TestApp_CheckJWTToken_EdgeCases(t *testing.T) {
 			Return(int32(1), nil).
 			Once()
 
-		appTest := &app{
+		appTest := &App{
 			userService: mockUserService,
 		}
 
@@ -148,7 +147,7 @@ func TestApp_Login(t *testing.T) {
 			}).
 			Return(expectedToken, nil)
 
-		appTest := &app{
+		appTest := &App{
 			userService: mockUserService,
 		}
 
@@ -180,7 +179,7 @@ func TestApp_Login(t *testing.T) {
 			}).
 			Return("", domainErr)
 
-		appTest := &app{
+		appTest := &App{
 			userService: mockUserService,
 		}
 
@@ -215,7 +214,7 @@ func TestApp_Register(t *testing.T) {
 			}).
 			Return(expectedToken, nil)
 
-		appTest := &app{
+		appTest := &App{
 			userService: mockUserService,
 		}
 
@@ -249,7 +248,7 @@ func TestApp_Register(t *testing.T) {
 			Return("", domainErr).
 			Once()
 
-		appTest := &app{
+		appTest := &App{
 			userService: mockUserService,
 		}
 
@@ -269,7 +268,7 @@ func TestApp_UserOrdersList(t *testing.T) {
 		mockOrderService := appMocks.NewMockOrderService(t)
 
 		userID := int32(123)
-		ctx := contextPkg.NewAuth(t.Context()).WithUserID(userID)
+		ctx := context.NewAuth(t.Context()).WithUserID(userID)
 
 		page := int32(1)
 		perPage := int32(20)
@@ -287,7 +286,7 @@ func TestApp_UserOrdersList(t *testing.T) {
 			OrdersListUser(ctx, userID, pagination.NewPagination(int64(page), int64(perPage))).
 			Return(expectedOrders, nil)
 
-		a := &app{
+		a := &App{
 			orderService: mockOrderService,
 		}
 
@@ -311,7 +310,7 @@ func TestApp_UserOrdersList(t *testing.T) {
 		logger.EXPECT().
 			Error("ctx is not contextAuth", mock2.Anything)
 
-		a := &app{
+		a := &App{
 			logger: logger,
 		}
 
@@ -326,7 +325,7 @@ func TestApp_UserOrdersList(t *testing.T) {
 		mockOrderService := appMocks.NewMockOrderService(t)
 
 		userID := int32(123)
-		ctx := contextPkg.NewAuth(t.Context()).WithUserID(userID)
+		ctx := context.NewAuth(t.Context()).WithUserID(userID)
 		page := int32(1)
 		perPage := int32(20)
 
@@ -339,7 +338,7 @@ func TestApp_UserOrdersList(t *testing.T) {
 			OrdersListUser(ctx, userID, pagination.NewPagination(int64(page), int64(perPage))).
 			Return(nil, domainErr)
 
-		a := &app{
+		a := &App{
 			orderService: mockOrderService,
 		}
 
@@ -356,9 +355,9 @@ func TestApp_UserIDFromContext(t *testing.T) {
 
 	t.Run("success - get userID from context", func(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
-		ctx := contextPkg.NewAuth(t.Context()).WithUserID(123)
+		ctx := context.NewAuth(t.Context()).WithUserID(123)
 
-		a := &app{
+		a := &App{
 			logger: logger,
 		}
 
@@ -370,9 +369,9 @@ func TestApp_UserIDFromContext(t *testing.T) {
 
 	t.Run("success - userID 0 with errorIfEmpty false", func(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
-		ctx := contextPkg.NewAuth(t.Context()).WithUserID(0)
+		ctx := context.NewAuth(t.Context()).WithUserID(0)
 
-		a := &app{
+		a := &App{
 			logger: logger,
 		}
 
@@ -389,7 +388,7 @@ func TestApp_UserIDFromContext(t *testing.T) {
 
 		ctx := t.Context()
 
-		a := &app{
+		a := &App{
 			logger: logger,
 		}
 
@@ -402,9 +401,9 @@ func TestApp_UserIDFromContext(t *testing.T) {
 
 	t.Run("error - userID 0 with errorIfEmpty true", func(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
-		ctx := contextPkg.NewAuth(t.Context()).WithUserID(0)
+		ctx := context.NewAuth(t.Context()).WithUserID(0)
 
-		a := &app{
+		a := &App{
 			logger: logger,
 		}
 

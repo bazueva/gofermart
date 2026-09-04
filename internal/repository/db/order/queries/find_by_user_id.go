@@ -12,6 +12,8 @@ func NewFindByUserID(userID int32, limit, offset int64) postgres.SelectStatement
 		table.Orders.Status,
 		table.Orders.UserID,
 		table.Orders.CreatedAt,
+		table.Orders.ProcessedAt,
+		table.Orders.BonusSum,
 	).FROM(table.Orders).
 		WHERE(table.Orders.UserID.EQ(postgres.Int32(userID))).
 		ORDER_BY(table.Orders.CreatedAt.DESC()).

@@ -178,7 +178,7 @@ func TestUserService_generateJWTToken(t *testing.T) {
 	t.Parallel()
 
 	secretKey := "test-secret-key"
-	service := &userService{
+	service := &UserService{
 		secretKey: secretKey,
 	}
 

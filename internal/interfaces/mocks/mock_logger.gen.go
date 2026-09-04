@@ -143,3 +143,57 @@ func (_c *MockLogger_Info_Call) RunAndReturn(run func(msg string, fields ...zap.
 	_c.Run(run)
 	return _c
 }
+
+// Warn provides a mock function for the type MockLogger
+func (_mock *MockLogger) Warn(msg string, fields ...zap.Field) {
+	if len(fields) > 0 {
+		_mock.Called(msg, fields)
+	} else {
+		_mock.Called(msg)
+	}
+
+	return
+}
+
+// MockLogger_Warn_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Warn'
+type MockLogger_Warn_Call struct {
+	*mock.Call
+}
+
+// Warn is a helper method to define mock.On call
+//   - msg string
+//   - fields ...zap.Field
+func (_e *MockLogger_Expecter) Warn(msg any, fields ...any) *MockLogger_Warn_Call {
+	return &MockLogger_Warn_Call{Call: _e.mock.On("Warn",
+		append([]any{msg}, fields...)...)}
+}
+
+func (_c *MockLogger_Warn_Call) Run(run func(msg string, fields ...zap.Field)) *MockLogger_Warn_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 []zap.Field
+		var variadicArgs []zap.Field
+		if len(args) > 1 {
+			variadicArgs = args[1].([]zap.Field)
+		}
+		arg1 = variadicArgs
+		run(
+			arg0,
+			arg1...,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLogger_Warn_Call) Return() *MockLogger_Warn_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockLogger_Warn_Call) RunAndReturn(run func(msg string, fields ...zap.Field)) *MockLogger_Warn_Call {
+	_c.Run(run)
+	return _c
+}
