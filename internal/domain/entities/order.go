@@ -20,3 +20,8 @@ type Order struct {
 	CreatedAt   *time.Time
 	ProcessedAt *time.Time
 }
+
+type BalanceWithdraw struct {
+	Order string
+	Sum   float64
+}

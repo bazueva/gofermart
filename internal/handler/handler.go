@@ -19,6 +19,7 @@ type App interface {
 	Login(ctx context.Context, request models.LoginRequest) (string, *entities.DomainError)
 	CreateOrder(ctx context.Context, id string) *entities.DomainError
 	UserOrdersList(ctx context.Context, page int32, perPage int32) ([]entities.Order, *entities.DomainError)
+	BalanceWithDraw(ctx context.Context, request models.BalanceWithdrawRequest) *entities.DomainError
 }
 
 type Handler struct {
@@ -197,4 +198,31 @@ func (h *Handler) UserOrdersList(writer http.ResponseWriter, request *http.Reque
 	}
 
 	writer.Write(resultJSON)
+}
+
+func (h *Handler) BalanceWithdraw(writer http.ResponseWriter, request *http.Request) {
+	defer func() {
+		if err := request.Body.Close(); err != nil {
+			h.logger.Error("body close error", zap.Error(err))
+		}
+	}()
+
+	var balanceRequest models.BalanceWithdrawRequest
+
+	decoder := json.NewDecoder(request.Body)
+	err := decoder.Decode(&balanceRequest)
+	if err != nil {
+		h.errorHandler(writer, err, http.StatusBadRequest)
+
+		return
+	}
+
+	errDomain := h.app.BalanceWithDraw(request.Context(), balanceRequest)
+	if errDomain != nil {
+		h.errorHandler(writer, errDomain, 0)
+
+		return
+	}
+
+	writer.WriteHeader(http.StatusOK)
 }

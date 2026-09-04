@@ -13,10 +13,6 @@ import (
 	"go.uber.org/zap"
 )
 
-/**
-Оркестратор для управлением взаимодействием сервисов.
-*/
-
 type UserService interface {
 	Register(ctx context.Context, user forms.UserForm) (string, *entities.DomainError)
 	Login(ctx context.Context, user forms.LoginForm) (string, *entities.DomainError)
@@ -26,12 +22,31 @@ type UserService interface {
 type OrderService interface {
 	CreateOrder(ctx context.Context, orderID string, userID int32) *entities.DomainError
 	OrdersListUser(ctx context.Context, userID int32, pagination *pagination.Pagination) ([]entities.Order, *entities.DomainError)
+	BalanceWithdraw(ctx context.Context, userID int32, withdraw entities.BalanceWithdraw) *entities.DomainError
 }
 
 type App struct {
 	userService  UserService
 	orderService OrderService
 	logger       interfaces.Logger
+}
+
+func (a *App) BalanceWithDraw(ctx context.Context, request models.BalanceWithdrawRequest) *entities.DomainError {
+	userID, err := a.userIDFromContext(ctx, true)
+	if err != nil {
+		return err
+	}
+
+	err = a.orderService.BalanceWithdraw(ctx, userID, entities.BalanceWithdraw{
+		Order: request.Order,
+		Sum:   request.Sum,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (a *App) UserOrdersList(ctx context.Context, page int32, perPage int32) ([]entities.Order, *entities.DomainError) {

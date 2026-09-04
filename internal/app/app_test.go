@@ -414,3 +414,106 @@ func TestApp_UserIDFromContext(t *testing.T) {
 		assert.Equal(t, entities.UnauthorizedErrorType, err.ErrorType)
 	})
 }
+
+func TestApp_BalanceWithDraw(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - balance withdraw", func(t *testing.T) {
+		mockOrderService := appMocks.NewMockOrderService(t)
+		logger := mocks.NewMockLogger(t)
+
+		ctx := context.NewAuth(t.Context()).WithUserID(123)
+		request := models.BalanceWithdrawRequest{
+			Order: "12345678903",
+			Sum:   100.50,
+		}
+
+		mockOrderService.EXPECT().
+			BalanceWithdraw(ctx, int32(123), entities.BalanceWithdraw{
+				Order: request.Order,
+				Sum:   request.Sum,
+			}).
+			Return(nil)
+
+		a := &App{
+			orderService: mockOrderService,
+			logger:       logger,
+		}
+
+		err := a.BalanceWithDraw(ctx, request)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("error - user not authorized", func(t *testing.T) {
+		logger := mocks.NewMockLogger(t)
+
+		ctx := context.NewAuth(t.Context()).WithUserID(0)
+		request := models.BalanceWithdrawRequest{
+			Order: "12345678903",
+			Sum:   100.50,
+		}
+
+		a := &App{
+			logger: logger,
+		}
+
+		err := a.BalanceWithDraw(ctx, request)
+
+		assert.Error(t, err)
+		assert.Equal(t, entities.UnauthorizedErrorType, err.ErrorType)
+	})
+
+	t.Run("error - context without Auth", func(t *testing.T) {
+		logger := mocks.NewMockLogger(t)
+		logger.EXPECT().Error("ctx is not contextAuth", mock2.Anything)
+
+		ctx := t.Context()
+		request := models.BalanceWithdrawRequest{
+			Order: "12345678903",
+			Sum:   100.50,
+		}
+
+		a := &App{
+			logger: logger,
+		}
+
+		err := a.BalanceWithDraw(ctx, request)
+
+		assert.Error(t, err)
+		assert.Equal(t, entities.InternalServerErrorType, err.ErrorType)
+	})
+
+	t.Run("error - order service failed", func(t *testing.T) {
+		mockOrderService := appMocks.NewMockOrderService(t)
+		logger := mocks.NewMockLogger(t)
+
+		ctx := context.NewAuth(t.Context()).WithUserID(123)
+		request := models.BalanceWithdrawRequest{
+			Order: "12345678903",
+			Sum:   100.50,
+		}
+
+		domainErr := entities.NewBadRequestError(
+			errors.New("insufficient balance"),
+			"insufficient balance",
+		)
+
+		mockOrderService.EXPECT().
+			BalanceWithdraw(ctx, int32(123), entities.BalanceWithdraw{
+				Order: request.Order,
+				Sum:   request.Sum,
+			}).
+			Return(domainErr)
+
+		a := &App{
+			orderService: mockOrderService,
+			logger:       logger,
+		}
+
+		err := a.BalanceWithDraw(ctx, request)
+
+		assert.Error(t, err)
+		assert.Equal(t, domainErr, err)
+	})
+}

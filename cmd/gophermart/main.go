@@ -17,8 +17,10 @@ import (
 	dbpkg "github.com/bazueva/gofermart/db"
 	"github.com/bazueva/gofermart/internal/app"
 	handlerPkg "github.com/bazueva/gofermart/internal/handler"
+	"github.com/bazueva/gofermart/internal/interfaces"
 	"github.com/bazueva/gofermart/internal/middleware"
 	"github.com/bazueva/gofermart/internal/repository/bonus"
+	dbPkg "github.com/bazueva/gofermart/internal/repository/db"
 	"github.com/bazueva/gofermart/internal/repository/db/order"
 	"github.com/bazueva/gofermart/internal/repository/db/user"
 	orderService "github.com/bazueva/gofermart/internal/service/order"
@@ -54,7 +56,8 @@ func main() {
 	// Запускаем pprof сервер с graceful shutdown
 	go runPprofServer(ctxWithCancel, cfg.logger)
 
-	components := initComponents(cfg, db)
+	wrappedDB := dbPkg.NewSQLDBWrapper(db)
+	components := initComponents(cfg, wrappedDB)
 
 	// Запускаем фоновые процессоры
 	components.OrderProcessor.Start(ctxWithCancel)
@@ -241,6 +244,7 @@ func setupRouter(components *AppComponents, logger *zap.Logger) *chi.Mux {
 
 		r.Post("/api/user/orders", components.Handler.CreateOrder)
 		r.Get("/api/user/orders", components.Handler.UserOrdersList)
+		r.Post("/api/user/balance/withdraw", components.Handler.BalanceWithdraw)
 	})
 
 	return router
@@ -255,7 +259,7 @@ type AppComponents struct {
 }
 
 // initComponents инициализирует все компоненты приложения
-func initComponents(cfg config, db *sql.DB) *AppComponents {
+func initComponents(cfg config, db interfaces.DB) *AppComponents {
 	// Репозитории
 	bonusRepo, err := bonus.NewRepository(
 		cfg.AccrualSystemAddress,
