@@ -21,6 +21,8 @@ const (
 	OkEntityErrorType
 	NoContentErrorType
 	RetriableErrorType
+	PaymentRequiredErrorType
+	ToManyRequestErrorType
 )
 
 func (e *DomainError) Error() string {
@@ -88,5 +90,21 @@ func NewRetriableError(err error, text string) *DomainError {
 		ErrorType: RetriableErrorType,
 		SourceErr: err,
 		Text:      text,
+	}
+}
+
+func NewPaymentRequiredError(err error, text string) *DomainError {
+	return &DomainError{
+		ErrorType: PaymentRequiredErrorType,
+		SourceErr: err,
+		Text:      text,
+	}
+}
+
+func NewTooManyRequestError(err error, text string) *DomainError {
+	return &DomainError{
+		ErrorType: ToManyRequestErrorType,
+		SourceErr: err,
+		Text:      lo.Ternary(text != "", text, "Слишком много запросов"),
 	}
 }

@@ -39,6 +39,71 @@ func (_m *MockOrderService) EXPECT() *MockOrderService_Expecter {
 	return &MockOrderService_Expecter{mock: &_m.Mock}
 }
 
+// BalanceWithdraw provides a mock function for the type MockOrderService
+func (_mock *MockOrderService) BalanceWithdraw(ctx context.Context, userID int32, withdraw entities.BalanceWithdraw) *entities.DomainError {
+	ret := _mock.Called(ctx, userID, withdraw)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BalanceWithdraw")
+	}
+
+	var r0 *entities.DomainError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int32, entities.BalanceWithdraw) *entities.DomainError); ok {
+		r0 = returnFunc(ctx, userID, withdraw)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entities.DomainError)
+		}
+	}
+	return r0
+}
+
+// MockOrderService_BalanceWithdraw_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'BalanceWithdraw'
+type MockOrderService_BalanceWithdraw_Call struct {
+	*mock.Call
+}
+
+// BalanceWithdraw is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID int32
+//   - withdraw entities.BalanceWithdraw
+func (_e *MockOrderService_Expecter) BalanceWithdraw(ctx any, userID any, withdraw any) *MockOrderService_BalanceWithdraw_Call {
+	return &MockOrderService_BalanceWithdraw_Call{Call: _e.mock.On("BalanceWithdraw", ctx, userID, withdraw)}
+}
+
+func (_c *MockOrderService_BalanceWithdraw_Call) Run(run func(ctx context.Context, userID int32, withdraw entities.BalanceWithdraw)) *MockOrderService_BalanceWithdraw_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 int32
+		if args[1] != nil {
+			arg1 = args[1].(int32)
+		}
+		var arg2 entities.BalanceWithdraw
+		if args[2] != nil {
+			arg2 = args[2].(entities.BalanceWithdraw)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockOrderService_BalanceWithdraw_Call) Return(domainError *entities.DomainError) *MockOrderService_BalanceWithdraw_Call {
+	_c.Call.Return(domainError)
+	return _c
+}
+
+func (_c *MockOrderService_BalanceWithdraw_Call) RunAndReturn(run func(ctx context.Context, userID int32, withdraw entities.BalanceWithdraw) *entities.DomainError) *MockOrderService_BalanceWithdraw_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateOrder provides a mock function for the type MockOrderService
 func (_mock *MockOrderService) CreateOrder(ctx context.Context, orderID string, userID int32) *entities.DomainError {
 	ret := _mock.Called(ctx, orderID, userID)

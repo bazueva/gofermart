@@ -26,6 +26,46 @@ type repository struct {
 	errorClassifier *dbPkg.PostgresErrorClassifier
 }
 
+func (r *repository) CreateOrderWithWithdraw(ctx context.Context, tx interfaces.Tx, userID int32, orderID string, bonusSum float64) *entities.DomainError {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	_, err := queries.NewCreateOrderWithdraw(
+		orderID,
+		userID,
+		bonusSum*-1,
+		hydrateDomainToOrdersStatusEnum(entities.OrdersStatusProcessed),
+	).
+		ExecContext(ctxWithTimeout, tx)
+	if err != nil {
+		r.logger.Error("error repository CreateOrderWithWithdraw", zap.Error(err))
+
+		return entities.NewInternalServerError(err, "")
+	}
+
+	return nil
+}
+
+func (r *repository) UserBalance(ctx context.Context, tx interfaces.Tx, userID int32) (float64, *entities.DomainError) {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	var result struct {
+		Sum float64
+	}
+
+	err := queries.NewUserBalanceSum(userID).
+		QueryContext(ctxWithTimeout, tx, &result)
+
+	if err != nil && !errors.Is(err, qrm.ErrNoRows) {
+		r.logger.Error("error repository FindStaleOrders", zap.Error(err))
+
+		return 0, entities.NewInternalServerError(err, "")
+	}
+
+	return result.Sum, nil
+}
+
 func (r *repository) FindStaleOrders(ctx context.Context, statuses []entities.OrderStatus, limit int64) ([]string, *entities.DomainError) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -146,7 +186,6 @@ func (r *repository) CreateOrder(ctx context.Context, orderID string, userID int
 	}
 
 	return nil
-
 }
 
 func (r *repository) FindByOrderID(ctx context.Context, orderID string) (*entities.Order, *entities.DomainError) {
@@ -174,6 +213,10 @@ func (r *repository) FindByOrderID(ctx context.Context, orderID string) (*entiti
 		UserID:    result.UserID,
 		CreatedAt: result.CreatedAt,
 	}, nil
+}
+
+func (r *repository) BeginTransaction(ctx context.Context) (interfaces.Tx, error) {
+	return r.db.BeginTx(ctx, nil)
 }
 
 func NewRepository(db interfaces.DB, logger interfaces.Logger) *repository {

@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/bazueva/gofermart/internal/domain/entities"
+	"github.com/bazueva/gofermart/internal/interfaces"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -36,6 +37,68 @@ type MockRepository_Expecter struct {
 
 func (_m *MockRepository) EXPECT() *MockRepository_Expecter {
 	return &MockRepository_Expecter{mock: &_m.Mock}
+}
+
+// BeginTransaction provides a mock function for the type MockRepository
+func (_mock *MockRepository) BeginTransaction(ctx context.Context) (interfaces.Tx, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BeginTransaction")
+	}
+
+	var r0 interfaces.Tx
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (interfaces.Tx, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) interfaces.Tx); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(interfaces.Tx)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRepository_BeginTransaction_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'BeginTransaction'
+type MockRepository_BeginTransaction_Call struct {
+	*mock.Call
+}
+
+// BeginTransaction is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockRepository_Expecter) BeginTransaction(ctx any) *MockRepository_BeginTransaction_Call {
+	return &MockRepository_BeginTransaction_Call{Call: _e.mock.On("BeginTransaction", ctx)}
+}
+
+func (_c *MockRepository_BeginTransaction_Call) Run(run func(ctx context.Context)) *MockRepository_BeginTransaction_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepository_BeginTransaction_Call) Return(tx interfaces.Tx, err error) *MockRepository_BeginTransaction_Call {
+	_c.Call.Return(tx, err)
+	return _c
+}
+
+func (_c *MockRepository_BeginTransaction_Call) RunAndReturn(run func(ctx context.Context) (interfaces.Tx, error)) *MockRepository_BeginTransaction_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // CountOrdersByUserID provides a mock function for the type MockRepository
@@ -173,6 +236,83 @@ func (_c *MockRepository_CreateOrder_Call) Return(domainError *entities.DomainEr
 }
 
 func (_c *MockRepository_CreateOrder_Call) RunAndReturn(run func(ctx context.Context, orderID string, userID int32, status entities.OrderStatus) *entities.DomainError) *MockRepository_CreateOrder_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CreateOrderWithWithdraw provides a mock function for the type MockRepository
+func (_mock *MockRepository) CreateOrderWithWithdraw(ctx context.Context, db interfaces.Tx, userID int32, orderID string, bonusSum float64) *entities.DomainError {
+	ret := _mock.Called(ctx, db, userID, orderID, bonusSum)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateOrderWithWithdraw")
+	}
+
+	var r0 *entities.DomainError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, interfaces.Tx, int32, string, float64) *entities.DomainError); ok {
+		r0 = returnFunc(ctx, db, userID, orderID, bonusSum)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entities.DomainError)
+		}
+	}
+	return r0
+}
+
+// MockRepository_CreateOrderWithWithdraw_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateOrderWithWithdraw'
+type MockRepository_CreateOrderWithWithdraw_Call struct {
+	*mock.Call
+}
+
+// CreateOrderWithWithdraw is a helper method to define mock.On call
+//   - ctx context.Context
+//   - db interfaces.Tx
+//   - userID int32
+//   - orderID string
+//   - bonusSum float64
+func (_e *MockRepository_Expecter) CreateOrderWithWithdraw(ctx any, db any, userID any, orderID any, bonusSum any) *MockRepository_CreateOrderWithWithdraw_Call {
+	return &MockRepository_CreateOrderWithWithdraw_Call{Call: _e.mock.On("CreateOrderWithWithdraw", ctx, db, userID, orderID, bonusSum)}
+}
+
+func (_c *MockRepository_CreateOrderWithWithdraw_Call) Run(run func(ctx context.Context, db interfaces.Tx, userID int32, orderID string, bonusSum float64)) *MockRepository_CreateOrderWithWithdraw_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 interfaces.Tx
+		if args[1] != nil {
+			arg1 = args[1].(interfaces.Tx)
+		}
+		var arg2 int32
+		if args[2] != nil {
+			arg2 = args[2].(int32)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		var arg4 float64
+		if args[4] != nil {
+			arg4 = args[4].(float64)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepository_CreateOrderWithWithdraw_Call) Return(domainError *entities.DomainError) *MockRepository_CreateOrderWithWithdraw_Call {
+	_c.Call.Return(domainError)
+	return _c
+}
+
+func (_c *MockRepository_CreateOrderWithWithdraw_Call) RunAndReturn(run func(ctx context.Context, db interfaces.Tx, userID int32, orderID string, bonusSum float64) *entities.DomainError) *MockRepository_CreateOrderWithWithdraw_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -325,6 +465,80 @@ func (_c *MockRepository_FindByUserID_Call) Return(orders []entities.Order, doma
 }
 
 func (_c *MockRepository_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userID int32, limit int64, offset int64) ([]entities.Order, *entities.DomainError)) *MockRepository_FindByUserID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UserBalance provides a mock function for the type MockRepository
+func (_mock *MockRepository) UserBalance(ctx context.Context, db interfaces.Tx, id int32) (float64, *entities.DomainError) {
+	ret := _mock.Called(ctx, db, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UserBalance")
+	}
+
+	var r0 float64
+	var r1 *entities.DomainError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, interfaces.Tx, int32) (float64, *entities.DomainError)); ok {
+		return returnFunc(ctx, db, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, interfaces.Tx, int32) float64); ok {
+		r0 = returnFunc(ctx, db, id)
+	} else {
+		r0 = ret.Get(0).(float64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, interfaces.Tx, int32) *entities.DomainError); ok {
+		r1 = returnFunc(ctx, db, id)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*entities.DomainError)
+		}
+	}
+	return r0, r1
+}
+
+// MockRepository_UserBalance_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UserBalance'
+type MockRepository_UserBalance_Call struct {
+	*mock.Call
+}
+
+// UserBalance is a helper method to define mock.On call
+//   - ctx context.Context
+//   - db interfaces.Tx
+//   - id int32
+func (_e *MockRepository_Expecter) UserBalance(ctx any, db any, id any) *MockRepository_UserBalance_Call {
+	return &MockRepository_UserBalance_Call{Call: _e.mock.On("UserBalance", ctx, db, id)}
+}
+
+func (_c *MockRepository_UserBalance_Call) Run(run func(ctx context.Context, db interfaces.Tx, id int32)) *MockRepository_UserBalance_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 interfaces.Tx
+		if args[1] != nil {
+			arg1 = args[1].(interfaces.Tx)
+		}
+		var arg2 int32
+		if args[2] != nil {
+			arg2 = args[2].(int32)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepository_UserBalance_Call) Return(f float64, domainError *entities.DomainError) *MockRepository_UserBalance_Call {
+	_c.Call.Return(f, domainError)
+	return _c
+}
+
+func (_c *MockRepository_UserBalance_Call) RunAndReturn(run func(ctx context.Context, db interfaces.Tx, id int32) (float64, *entities.DomainError)) *MockRepository_UserBalance_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -39,6 +39,65 @@ func (_m *MockApp) EXPECT() *MockApp_Expecter {
 	return &MockApp_Expecter{mock: &_m.Mock}
 }
 
+// BalanceWithDraw provides a mock function for the type MockApp
+func (_mock *MockApp) BalanceWithDraw(ctx context.Context, request models.BalanceWithdrawRequest) *entities.DomainError {
+	ret := _mock.Called(ctx, request)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BalanceWithDraw")
+	}
+
+	var r0 *entities.DomainError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, models.BalanceWithdrawRequest) *entities.DomainError); ok {
+		r0 = returnFunc(ctx, request)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entities.DomainError)
+		}
+	}
+	return r0
+}
+
+// MockApp_BalanceWithDraw_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'BalanceWithDraw'
+type MockApp_BalanceWithDraw_Call struct {
+	*mock.Call
+}
+
+// BalanceWithDraw is a helper method to define mock.On call
+//   - ctx context.Context
+//   - request models.BalanceWithdrawRequest
+func (_e *MockApp_Expecter) BalanceWithDraw(ctx any, request any) *MockApp_BalanceWithDraw_Call {
+	return &MockApp_BalanceWithDraw_Call{Call: _e.mock.On("BalanceWithDraw", ctx, request)}
+}
+
+func (_c *MockApp_BalanceWithDraw_Call) Run(run func(ctx context.Context, request models.BalanceWithdrawRequest)) *MockApp_BalanceWithDraw_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 models.BalanceWithdrawRequest
+		if args[1] != nil {
+			arg1 = args[1].(models.BalanceWithdrawRequest)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockApp_BalanceWithDraw_Call) Return(domainError *entities.DomainError) *MockApp_BalanceWithDraw_Call {
+	_c.Call.Return(domainError)
+	return _c
+}
+
+func (_c *MockApp_BalanceWithDraw_Call) RunAndReturn(run func(ctx context.Context, request models.BalanceWithdrawRequest) *entities.DomainError) *MockApp_BalanceWithDraw_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateOrder provides a mock function for the type MockApp
 func (_mock *MockApp) CreateOrder(ctx context.Context, id string) *entities.DomainError {
 	ret := _mock.Called(ctx, id)
