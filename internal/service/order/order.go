@@ -22,13 +22,13 @@ type OrderQueue interface {
 	AddOrderIDToQueue(orderID string)
 }
 
-type order struct {
+type Order struct {
 	repository Repository
 	logger     interfaces.Logger
 	orderQueue OrderQueue
 }
 
-func (o *order) OrdersListUser(
+func (o *Order) OrdersListUser(
 	ctx context.Context,
 	userID int32,
 	pagination *pagination.Pagination,
@@ -52,7 +52,7 @@ func (o *order) OrdersListUser(
 	return orders, nil
 }
 
-func (o *order) CreateOrder(ctx context.Context, orderID string, userID int32) *entities.DomainError {
+func (o *Order) CreateOrder(ctx context.Context, orderID string, userID int32) *entities.DomainError {
 	orderID = strings.Trim(orderID, " ")
 
 	errDomain := o.validateOrderID(ctx, orderID, userID)
@@ -72,7 +72,7 @@ func (o *order) CreateOrder(ctx context.Context, orderID string, userID int32) *
 	return nil
 }
 
-func (o *order) validateOrderID(ctx context.Context, id string, userID int32) *entities.DomainError {
+func (o *Order) validateOrderID(ctx context.Context, id string, userID int32) *entities.DomainError {
 	if !helpers.ValidateLuhn(id) {
 		return entities.NewUnprocessableEntity(nil, "неверный формат номера заказа")
 	}
@@ -97,8 +97,8 @@ func NewOrder(
 	repository Repository,
 	orderQueue OrderQueue,
 	logger interfaces.Logger,
-) *order {
-	return &order{
+) *Order {
+	return &Order{
 		repository: repository,
 		logger:     logger,
 		orderQueue: orderQueue,

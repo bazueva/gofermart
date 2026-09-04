@@ -21,7 +21,7 @@ type OrderRepository interface {
 	FindStaleOrders(ctx context.Context, statuses []entities.OrderStatus, limit int64) ([]string, *entities.DomainError)
 }
 
-type orderProcessor struct {
+type OrderProcessor struct {
 	logger             interfaces.Logger
 	ordersProcessingCh chan string
 	ordersProcessedCh  chan entities.Order
@@ -29,7 +29,7 @@ type orderProcessor struct {
 	orderRepository    OrderRepository
 }
 
-func (op *orderProcessor) AddOrderIDToQueue(orderID string) {
+func (op *OrderProcessor) AddOrderIDToQueue(orderID string) {
 	select {
 	case op.ordersProcessingCh <- orderID:
 		op.logger.Info("Заказ отправлен в очередь на обработку", zap.String("order_id", orderID))
@@ -38,7 +38,7 @@ func (op *orderProcessor) AddOrderIDToQueue(orderID string) {
 	}
 }
 
-func (op *orderProcessor) AddOrderToQueue(order entities.Order) {
+func (op *OrderProcessor) AddOrderToQueue(order entities.Order) {
 	select {
 	case op.ordersProcessedCh <- order:
 		op.logger.Info("Заказ отправлен в очередь на обновление", zap.Any("order", order))
@@ -51,13 +51,13 @@ func NewOrderProcessor(
 	bonusRepository BonusRepository,
 	orderRepository OrderRepository,
 	logger interfaces.Logger,
-) *orderProcessor {
+) *OrderProcessor {
 	// канал для обработка заказов, у которых статус NEW, PROCESSING
 	ordersProcessingCh := make(chan string, rateLimitWorkers*5)
 	// канал с результатом начисления по заказам
 	ordersProcessedCh := make(chan entities.Order, rateLimitWorkers*5)
 
-	return &orderProcessor{
+	return &OrderProcessor{
 		logger:             logger,
 		bonusRepository:    bonusRepository,
 		orderRepository:    orderRepository,
@@ -75,7 +75,7 @@ const (
 	databasePollerInterval = 1 * time.Minute
 )
 
-func (op *orderProcessor) StartDatabasePoller(ctx context.Context) {
+func (op *OrderProcessor) StartDatabasePoller(ctx context.Context) {
 	tick := time.Tick(databasePollerInterval)
 
 	go func() {
@@ -101,7 +101,7 @@ func (op *orderProcessor) StartDatabasePoller(ctx context.Context) {
 	}()
 }
 
-func (op *orderProcessor) Start(ctx context.Context) {
+func (op *OrderProcessor) Start(ctx context.Context) {
 	var wgProcessWorkers sync.WaitGroup
 	var wgSaveResults sync.WaitGroup
 
@@ -137,13 +137,13 @@ func (op *orderProcessor) Start(ctx context.Context) {
 	}()
 }
 
-func (op *orderProcessor) orderCheckStatus(ctx context.Context) {
+func (op *OrderProcessor) orderCheckStatus(ctx context.Context) {
 	for orderID := range op.ordersProcessingCh {
 		op.checkOrderBonus(ctx, orderID)
 	}
 }
 
-func (op *orderProcessor) checkOrderBonus(ctx context.Context, orderID string) {
+func (op *OrderProcessor) checkOrderBonus(ctx context.Context, orderID string) {
 	result, err := op.bonusRepository.GetOrder(ctx, orderID)
 	if err != nil {
 		if err.ErrorType == entities.NoContentErrorType {
@@ -169,7 +169,7 @@ func (op *orderProcessor) checkOrderBonus(ctx context.Context, orderID string) {
 	}
 }
 
-func (op *orderProcessor) orderUpdateBonus(ctx context.Context) {
+func (op *OrderProcessor) orderUpdateBonus(ctx context.Context) {
 	for orderData := range op.ordersProcessedCh {
 		// если ctx отменен, создаем новый контект чтобы запросы в БД успели выполниться
 		saveCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -180,7 +180,7 @@ func (op *orderProcessor) orderUpdateBonus(ctx context.Context) {
 	}
 }
 
-func (op *orderProcessor) updateStatusOrder(ctx context.Context, data entities.Order) {
+func (op *OrderProcessor) updateStatusOrder(ctx context.Context, data entities.Order) {
 	if data.OrderID == "" {
 		op.logger.Info("updateStatusOrder пустой orderID", zap.Any("order", data))
 

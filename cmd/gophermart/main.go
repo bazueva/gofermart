@@ -3,8 +3,16 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"runtime"
+	"syscall"
+	"time"
+
+	_ "net/http/pprof"
 
 	dbpkg "github.com/bazueva/gofermart/db"
 	"github.com/bazueva/gofermart/internal/app"
@@ -21,31 +29,13 @@ import (
 )
 
 func main() {
-	cfg, err := readConfig()
-	if err != nil {
-		panic(err)
-	}
+	cfg := initConfig()
 
-	cfg.logger, err = zap.NewProduction(zap.AddStacktrace(zap.ErrorLevel))
-	if err != nil {
-		panic(err)
-	}
+	initLogger(&cfg)
+	defer syncLogger(cfg.logger)
 
-	defer func() {
-		if err = cfg.logger.Sync(); err != nil {
-			log.Printf("failed to sync logger: %v", err)
-		}
-	}()
-
-	db, err := sql.Open("pgx", cfg.DatabaseDSN)
-	if err != nil {
-		panic(err)
-	}
-	defer func() {
-		if err = db.Close(); err != nil {
-			log.Printf("failed to close database: %v", err)
-		}
-	}()
+	db := initDatabase(cfg)
+	defer closeDatabase(db)
 
 	if cfg.DatabaseDSN != "" {
 		if err := dbpkg.RunMigrations(db); err != nil {
@@ -53,58 +43,246 @@ func main() {
 		}
 	}
 
-	startServer(cfg, db)
+	initialGoroutines := runtime.NumGoroutine()
+	defer checkGoroutineLeaks(initialGoroutines, cfg.logger)
+
+	ctxWithCancel, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	setupSignalHandler(ctxWithCancel, cancel, cfg.logger)
+
+	// Запускаем pprof сервер с graceful shutdown
+	go runPprofServer(ctxWithCancel, cfg.logger)
+
+	components := initComponents(cfg, db)
+
+	// Запускаем фоновые процессоры
+	components.OrderProcessor.Start(ctxWithCancel)
+	components.OrderProcessor.StartDatabasePoller(ctxWithCancel)
+
+	startServer(ctxWithCancel, cfg, components)
+
+	// ждем 6 секунд, чтобы дать воркерам orderProcessor (у которых таймаут 5с)
+	// гарантированно завершить Graceful Shutdown перед тем, как проверять утечки памяти.
+	time.Sleep(6 * time.Second)
+
+	<-ctxWithCancel.Done()
+	cfg.logger.Info("Программа завершена")
 }
 
-func startServer(cfg config, db *sql.DB) {
-	/* http repo */
-	bonusRepository, err := bonus.NewRepository(
-		cfg.AccrualSystemAddress,
-		cfg.logger,
-	)
+func checkGoroutineLeaks(initial int, logger *zap.Logger) {
+	// Даём время на завершение всех горутин
+	time.Sleep(200 * time.Millisecond)
+
+	final := runtime.NumGoroutine()
+	if final > initial {
+		logger.Warn("Обнаружены незавершённые горутины",
+			zap.Int("initial", initial),
+			zap.Int("final", final),
+			zap.Int("difference", final-initial),
+		)
+		// Делаем дамп для анализа
+		dumpGoroutines(logger)
+	} else {
+		logger.Info("✅ Все горутины завершились корректно",
+			zap.Int("count", final),
+		)
+	}
+}
+
+func setupSignalHandler(ctx context.Context, cancel context.CancelFunc, logger *zap.Logger) {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigCh
+		logger.Info("Получен Ctrl+C, останавливаемся...")
+		// Делаем дамп горутин перед завершением
+		dumpGoroutines(logger)
+
+		cancel()
+	}()
+}
+
+func initDatabase(cfg config) *sql.DB {
+	db, err := sql.Open("pgx", cfg.DatabaseDSN)
 	if err != nil {
 		panic(err)
 	}
 
-	/* DB repo */
-	userRepository := user.NewRepository(db, cfg.logger)
-	orderRepository := order.NewRepository(db, cfg.logger)
+	return db
+}
 
-	/* workers */
-	ctx := context.Background()
-	orderProcessor := orderService.NewOrderProcessor(bonusRepository, orderRepository, cfg.logger)
-	orderProcessor.Start(ctx)
-	orderProcessor.StartDatabasePoller(ctx)
+func closeDatabase(db *sql.DB) {
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("failed to close database: %v", err)
+		}
+	}()
+}
 
-	/* services */
-	userService := userService.NewUserService(userRepository, cfg.logger, cfg.SecretKey)
-	orderService := orderService.NewOrder(orderRepository, orderProcessor, cfg.logger)
+func syncLogger(logger *zap.Logger) {
+	defer func() {
+		if err := logger.Sync(); err != nil {
+			log.Printf("failed to sync logger: %v", err)
+		}
+	}()
+}
 
-	var application = app.NewApp(userService, orderService, cfg.logger)
-	handler := handlerPkg.NewHandler(cfg.logger, application)
+func initLogger(cfg *config) {
+	var err error
 
-	router := chi.NewRouter()
-	router.Use(middleware.ServerLogger(cfg.logger))
-	router.Use(middleware.JSONMiddleware)
+	cfg.logger, err = zap.NewProduction(zap.AddStacktrace(zap.ErrorLevel))
+	if err != nil {
+		panic(err)
+	}
+}
 
-	router.Post("/api/user/register", handler.RegisterUser)
-	router.Post("/api/user/login", handler.LoginUser)
+func initConfig() config {
+	cfg, err := readConfig()
+	if err != nil {
+		panic(err)
+	}
 
-	router.Group(func(r chi.Router) {
-		r.Use(middleware.Authorization(application, cfg.logger))
+	return cfg
+}
 
-		r.Post("/api/user/orders", handler.CreateOrder)
-		r.Get("/api/user/orders", handler.UserOrdersList)
-	})
+func runPprofServer(ctx context.Context, logger *zap.Logger) {
+	pprofServer := &http.Server{
+		Addr:         "localhost:6060",
+		Handler:      nil,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	go func() {
+		logger.Info("pprof server started",
+			zap.String("url", "http://localhost:6060/debug/pprof/"),
+		)
+		if err := pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Error("pprof server error", zap.Error(err))
+		}
+	}()
+
+	<-ctx.Done()
+	logger.Info("Остановка pprof сервера...")
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+
+	if err := pprofServer.Shutdown(shutdownCtx); err != nil {
+		logger.Error("Ошибка остановки pprof сервера", zap.Error(err))
+	} else {
+		logger.Info("pprof сервер остановлен")
+	}
+}
+
+// dumpGoroutines сохраняет дамп всех горутин в файл
+func dumpGoroutines(logger *zap.Logger) {
+	// Получаем стек всех горутин
+	buf := make([]byte, 1<<20) // 1MB буфер
+	n := runtime.Stack(buf, true)
+
+	timestamp := time.Now().Format("20060102_150405")
+	filename := fmt.Sprintf("goroutines_dump_%s.txt", timestamp)
+
+	if err := os.WriteFile(filename, buf[:n], 0644); err != nil {
+		logger.Error("Не удалось сохранить дамп горутин",
+			zap.String("filename", filename),
+			zap.Error(err),
+		)
+		return
+	}
+
+	logger.Info("Дамп горутин сохранён",
+		zap.String("filename", filename),
+		zap.Int("goroutines_count", runtime.NumGoroutine()),
+		zap.Int("stack_size", n),
+	)
+}
+
+func startServer(ctx context.Context, cfg config, components *AppComponents) {
+	router := setupRouter(components, cfg.logger)
 
 	server := &http.Server{
 		Addr:    cfg.ServerAddr.String(),
 		Handler: router,
 	}
 
-	cfg.logger.Info("Сервер запущен по адресу", zap.String("addr", server.Addr))
+	go func() {
+		cfg.logger.Info("Сервер запущен", zap.String("addr", cfg.ServerAddr.String()))
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			cfg.logger.Error("Ошибка сервера", zap.Error(err))
+		}
+	}()
 
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		cfg.logger.Error("Ошибка сервера", zap.Error(err))
+	<-ctx.Done()
+	cfg.logger.Info("Остановка сервера...")
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		cfg.logger.Error("Ошибка остановки сервера", zap.Error(err))
+	}
+}
+
+func setupRouter(components *AppComponents, logger *zap.Logger) *chi.Mux {
+	router := chi.NewRouter()
+
+	router.Use(middleware.ServerLogger(logger))
+	router.Use(middleware.JSONMiddleware)
+
+	router.Post("/api/user/register", components.Handler.RegisterUser)
+	router.Post("/api/user/login", components.Handler.LoginUser)
+
+	router.Group(func(r chi.Router) {
+		r.Use(middleware.Authorization(components.App, logger))
+
+		r.Post("/api/user/orders", components.Handler.CreateOrder)
+		r.Get("/api/user/orders", components.Handler.UserOrdersList)
+	})
+
+	return router
+}
+
+type AppComponents struct {
+	UserService    *userService.UserService
+	OrderService   *orderService.Order
+	OrderProcessor *orderService.OrderProcessor
+	App            *app.App
+	Handler        *handlerPkg.Handler
+}
+
+// initComponents инициализирует все компоненты приложения
+func initComponents(cfg config, db *sql.DB) *AppComponents {
+	// Репозитории
+	bonusRepo, err := bonus.NewRepository(
+		cfg.AccrualSystemAddress,
+		cfg.logger,
+	)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to init bonus repository: %v", err))
+	}
+	userRepo := user.NewRepository(db, cfg.logger)
+	orderRepo := order.NewRepository(db, cfg.logger)
+
+	// Воркеры
+	orderProcessor := orderService.NewOrderProcessor(bonusRepo, orderRepo, cfg.logger)
+
+	// Сервисы
+	userService := userService.NewUserService(userRepo, cfg.logger, cfg.SecretKey)
+	orderService := orderService.NewOrder(orderRepo, orderProcessor, cfg.logger)
+
+	// Приложение и хендлер
+	application := app.NewApp(userService, orderService, cfg.logger)
+	handler := handlerPkg.NewHandler(cfg.logger, application)
+
+	return &AppComponents{
+		UserService:    userService,
+		OrderService:   orderService,
+		OrderProcessor: orderProcessor,
+		App:            application,
+		Handler:        handler,
 	}
 }
