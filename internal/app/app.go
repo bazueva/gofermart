@@ -24,6 +24,7 @@ type OrderService interface {
 	OrdersListUser(ctx context.Context, userID int32, pagination *pagination.Pagination) ([]entities.Order, *entities.DomainError)
 	BalanceWithdraw(ctx context.Context, userID int32, withdraw entities.BalanceWithdraw) *entities.DomainError
 	OrdersWithdrawalsListUser(ctx context.Context, userID int32, newPagination *pagination.Pagination) ([]entities.Order, *entities.DomainError)
+	UserBalance(ctx context.Context, id int32) (entities.Balance, *entities.DomainError)
 }
 
 type App struct {
@@ -32,18 +33,22 @@ type App struct {
 	logger       interfaces.Logger
 }
 
+func (a *App) UserBalance(ctx context.Context) (entities.Balance, *entities.DomainError) {
+	userID, err := a.userIDFromContext(ctx, true)
+	if err != nil {
+		return entities.Balance{}, err
+	}
+
+	return a.orderService.UserBalance(ctx, userID)
+}
+
 func (a *App) UserWithdrawals(ctx context.Context, page int32, perPage int32) ([]entities.Order, *entities.DomainError) {
 	userID, err := a.userIDFromContext(ctx, true)
 	if err != nil {
 		return nil, err
 	}
 
-	orders, err := a.orderService.OrdersWithdrawalsListUser(ctx, userID, pagination.NewPagination(int64(page), int64(perPage)))
-	if err != nil {
-		return nil, err
-	}
-
-	return orders, nil
+	return a.orderService.OrdersWithdrawalsListUser(ctx, userID, pagination.NewPagination(int64(page), int64(perPage)))
 }
 
 func (a *App) BalanceWithDraw(ctx context.Context, request models.BalanceWithdrawRequest) *entities.DomainError {
@@ -52,16 +57,10 @@ func (a *App) BalanceWithDraw(ctx context.Context, request models.BalanceWithdra
 		return err
 	}
 
-	err = a.orderService.BalanceWithdraw(ctx, userID, entities.BalanceWithdraw{
+	return a.orderService.BalanceWithdraw(ctx, userID, entities.BalanceWithdraw{
 		Order: request.Order,
 		Sum:   request.Sum,
 	})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (a *App) UserOrdersList(ctx context.Context, page int32, perPage int32) ([]entities.Order, *entities.DomainError) {
@@ -70,12 +69,7 @@ func (a *App) UserOrdersList(ctx context.Context, page int32, perPage int32) ([]
 		return nil, err
 	}
 
-	orders, err := a.orderService.OrdersListUser(ctx, userID, pagination.NewPagination(int64(page), int64(perPage)))
-	if err != nil {
-		return nil, err
-	}
-
-	return orders, nil
+	return a.orderService.OrdersListUser(ctx, userID, pagination.NewPagination(int64(page), int64(perPage)))
 }
 
 func (a *App) userIDFromContext(ctx context.Context, errorIfEmpty bool) (int32, *entities.DomainError) {
@@ -101,46 +95,25 @@ func (a *App) CreateOrder(ctx context.Context, orderID string) *entities.DomainE
 		return err
 	}
 
-	err = a.orderService.CreateOrder(ctx, orderID, userID)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return a.orderService.CreateOrder(ctx, orderID, userID)
 }
 
 func (a *App) CheckJWTToken(token string) (int32, *entities.DomainError) {
-	userID, err := a.userService.CheckJWTToken(token)
-	if err != nil {
-		return 0, err
-	}
-
-	return userID, nil
+	return a.userService.CheckJWTToken(token)
 }
 
 func (a *App) Login(ctx context.Context, request models.LoginRequest) (string, *entities.DomainError) {
-	tokenJWT, err := a.userService.Login(ctx, forms.LoginForm{
+	return a.userService.Login(ctx, forms.LoginForm{
 		Login:    request.Login,
 		Password: request.Password,
 	})
-
-	if err != nil {
-		return "", err
-	}
-
-	return tokenJWT, nil
 }
 
 func (a *App) Register(ctx context.Context, request models.RegisterRequest) (string, *entities.DomainError) {
-	tokenJWT, err := a.userService.Register(ctx, forms.UserForm{
+	return a.userService.Register(ctx, forms.UserForm{
 		Login:    request.Login,
 		Password: request.Password,
 	})
-	if err != nil {
-		return "", err
-	}
-
-	return tokenJWT, nil
 }
 
 func NewApp(

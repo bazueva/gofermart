@@ -25,6 +25,30 @@ type repository struct {
 	errorClassifier *dbPkg.PostgresErrorClassifier
 }
 
+func (r *repository) UserBalanceWithWithdrawn(ctx context.Context, userID int32) (entities.Balance, *entities.DomainError) {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	var result struct {
+		Balance   float64
+		Withdrawn float64
+	}
+
+	err := queries.NewUserBalanceWithWithdrawn(userID).
+		QueryContext(ctxWithTimeout, r.db, &result)
+
+	if err != nil && !errors.Is(err, qrm.ErrNoRows) {
+		r.logger.Error("error repository UserBalance", zap.Error(err))
+
+		return entities.Balance{}, entities.NewInternalServerError(err, "")
+	}
+
+	return entities.Balance{
+		Balance:   result.Balance,
+		Withdrawn: result.Withdrawn,
+	}, nil
+}
+
 func (r *repository) CreateOrderWithWithdraw(ctx context.Context, tx interfaces.Tx, userID int32, orderID string, bonusSum float64) *entities.DomainError {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -57,7 +81,7 @@ func (r *repository) UserBalance(ctx context.Context, tx interfaces.Tx, userID i
 		QueryContext(ctxWithTimeout, tx, &result)
 
 	if err != nil && !errors.Is(err, qrm.ErrNoRows) {
-		r.logger.Error("error repository FindStaleOrders", zap.Error(err))
+		r.logger.Error("error repository UserBalance", zap.Error(err))
 
 		return 0, entities.NewInternalServerError(err, "")
 	}

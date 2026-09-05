@@ -651,3 +651,92 @@ func TestApp_UserWithdrawals(t *testing.T) {
 		assert.Equal(t, domainErr, err)
 	})
 }
+
+func TestApp_UserBalance(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success balance", func(t *testing.T) {
+		mockOrderService := appMocks.NewMockOrderService(t)
+		logger := mocks.NewMockLogger(t)
+
+		ctx := context.NewAuth(t.Context()).WithUserID(123)
+
+		mockOrderService.EXPECT().
+			UserBalance(ctx, int32(123)).
+			Return(entities.Balance{Balance: 1, Withdrawn: 2}, nil)
+
+		a := &App{
+			orderService: mockOrderService,
+			logger:       logger,
+		}
+
+		balance, err := a.UserBalance(ctx)
+
+		assert.Nil(t, err)
+		assert.Equal(t, entities.Balance{
+			Balance:   1,
+			Withdrawn: 2,
+		}, balance)
+	})
+
+	t.Run("error - user not authorized", func(t *testing.T) {
+		logger := mocks.NewMockLogger(t)
+
+		ctx := context.NewAuth(t.Context()).WithUserID(0)
+
+		a := &App{
+			logger: logger,
+		}
+
+		balance, err := a.UserBalance(ctx)
+
+		assert.Error(t, err)
+		assert.Empty(t, balance)
+		assert.Equal(t, entities.UnauthorizedErrorType, err.ErrorType)
+	})
+
+	t.Run("error - context without Auth", func(t *testing.T) {
+		logger := mocks.NewMockLogger(t)
+
+		ctx := t.Context()
+
+		a := &App{
+			logger: logger,
+		}
+
+		logger.EXPECT().Error("ctx is not contextAuth", mock2.Anything).Return()
+
+		balance, err := a.UserBalance(ctx)
+
+		assert.Error(t, err)
+		assert.Empty(t, balance)
+		assert.Equal(t, entities.InternalServerErrorType, err.ErrorType)
+	})
+
+	t.Run("error - order service failed", func(t *testing.T) {
+		mockOrderService := appMocks.NewMockOrderService(t)
+		logger := mocks.NewMockLogger(t)
+
+		ctx := context.NewAuth(t.Context()).WithUserID(123)
+
+		domainErr := entities.NewInternalServerError(
+			errors.New("database error"),
+			"failed to get withdrawals",
+		)
+
+		mockOrderService.EXPECT().
+			UserBalance(ctx, int32(123)).
+			Return(entities.Balance{}, domainErr)
+
+		a := &App{
+			orderService: mockOrderService,
+			logger:       logger,
+		}
+
+		balance, err := a.UserBalance(ctx)
+
+		assert.Error(t, err)
+		assert.Empty(t, balance)
+		assert.Equal(t, domainErr, err)
+	})
+}

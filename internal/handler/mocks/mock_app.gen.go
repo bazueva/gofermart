@@ -293,6 +293,68 @@ func (_c *MockApp_Register_Call) RunAndReturn(run func(ctx context.Context, requ
 	return _c
 }
 
+// UserBalance provides a mock function for the type MockApp
+func (_mock *MockApp) UserBalance(ctx context.Context) (entities.Balance, *entities.DomainError) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UserBalance")
+	}
+
+	var r0 entities.Balance
+	var r1 *entities.DomainError
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (entities.Balance, *entities.DomainError)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) entities.Balance); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(entities.Balance)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) *entities.DomainError); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*entities.DomainError)
+		}
+	}
+	return r0, r1
+}
+
+// MockApp_UserBalance_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UserBalance'
+type MockApp_UserBalance_Call struct {
+	*mock.Call
+}
+
+// UserBalance is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockApp_Expecter) UserBalance(ctx any) *MockApp_UserBalance_Call {
+	return &MockApp_UserBalance_Call{Call: _e.mock.On("UserBalance", ctx)}
+}
+
+func (_c *MockApp_UserBalance_Call) Run(run func(ctx context.Context)) *MockApp_UserBalance_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockApp_UserBalance_Call) Return(balance entities.Balance, domainError *entities.DomainError) *MockApp_UserBalance_Call {
+	_c.Call.Return(balance, domainError)
+	return _c
+}
+
+func (_c *MockApp_UserBalance_Call) RunAndReturn(run func(ctx context.Context) (entities.Balance, *entities.DomainError)) *MockApp_UserBalance_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UserOrdersList provides a mock function for the type MockApp
 func (_mock *MockApp) UserOrdersList(ctx context.Context, page int32, perPage int32) ([]entities.Order, *entities.DomainError) {
 	ret := _mock.Called(ctx, page, perPage)

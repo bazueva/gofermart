@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
 	"time"
 
@@ -45,9 +44,6 @@ func main() {
 		}
 	}
 
-	initialGoroutines := runtime.NumGoroutine()
-	defer checkGoroutineLeaks(initialGoroutines, cfg.logger)
-
 	ctxWithCancel, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -73,24 +69,6 @@ func main() {
 	cfg.logger.Info("Программа завершена")
 }
 
-func checkGoroutineLeaks(initial int, logger *zap.Logger) {
-	// Даём время на завершение всех горутин
-	time.Sleep(200 * time.Millisecond)
-
-	final := runtime.NumGoroutine()
-	if final > initial {
-		logger.Warn("Обнаружены незавершённые горутины",
-			zap.Int("initial", initial),
-			zap.Int("final", final),
-			zap.Int("difference", final-initial),
-		)
-	} else {
-		logger.Info("✅ Все горутины завершились корректно",
-			zap.Int("count", final),
-		)
-	}
-}
-
 func setupSignalHandler(ctx context.Context, cancel context.CancelFunc, logger *zap.Logger) {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -98,8 +76,6 @@ func setupSignalHandler(ctx context.Context, cancel context.CancelFunc, logger *
 	go func() {
 		<-sigCh
 		logger.Info("Получен Ctrl+C, останавливаемся...")
-		// Делаем дамп горутин перед завершением
-		dumpGoroutines(logger)
 
 		cancel()
 	}()
@@ -115,11 +91,9 @@ func initDatabase(cfg config) *sql.DB {
 }
 
 func closeDatabase(db *sql.DB) {
-	defer func() {
-		if err := db.Close(); err != nil {
-			log.Printf("failed to close database: %v", err)
-		}
-	}()
+	if err := db.Close(); err != nil {
+		log.Printf("failed to close database: %v", err)
+	}
 }
 
 func syncLogger(logger *zap.Logger) {
@@ -178,30 +152,6 @@ func runPprofServer(ctx context.Context, logger *zap.Logger) {
 	}
 }
 
-// dumpGoroutines сохраняет дамп всех горутин в файл
-func dumpGoroutines(logger *zap.Logger) {
-	// Получаем стек всех горутин
-	buf := make([]byte, 1<<20) // 1MB буфер
-	n := runtime.Stack(buf, true)
-
-	timestamp := time.Now().Format("20060102_150405")
-	filename := fmt.Sprintf("goroutines_dump_%s.txt", timestamp)
-
-	if err := os.WriteFile(filename, buf[:n], 0644); err != nil {
-		logger.Error("Не удалось сохранить дамп горутин",
-			zap.String("filename", filename),
-			zap.Error(err),
-		)
-		return
-	}
-
-	logger.Info("Дамп горутин сохранён",
-		zap.String("filename", filename),
-		zap.Int("goroutines_count", runtime.NumGoroutine()),
-		zap.Int("stack_size", n),
-	)
-}
-
 func startServer(ctx context.Context, cfg config, components *AppComponents) {
 	router := setupRouter(components, cfg.logger)
 
@@ -244,6 +194,7 @@ func setupRouter(components *AppComponents, logger *zap.Logger) *chi.Mux {
 		r.Get("/api/user/orders", components.Handler.UserOrdersList)
 		r.Post("/api/user/balance/withdraw", components.Handler.BalanceWithdraw)
 		r.Get("/api/user/withdrawals", components.Handler.UserWithdrawals)
+		r.Get("/api/user/balance", components.Handler.UserBalance)
 	})
 
 	return router
