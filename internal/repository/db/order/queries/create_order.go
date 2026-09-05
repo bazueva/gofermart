@@ -1,11 +1,12 @@
 package queries
 
 import (
+	"github.com/bazueva/gofermart/internal/domain/entities"
 	"github.com/bazueva/gofermart/schema.gen/gofermart/public/table"
 	"github.com/go-jet/jet/v2/postgres"
 )
 
-func NewCreateOrder(orderID string, userID int32, status postgres.Expression) postgres.InsertStatement {
+func NewCreateOrder(orderID string, userID int32, status entities.OrderStatus) postgres.InsertStatement {
 	return table.Orders.
 		INSERT(
 			table.Orders.OrderID,
@@ -14,8 +15,8 @@ func NewCreateOrder(orderID string, userID int32, status postgres.Expression) po
 		).
 		VALUES(
 			orderID,
-			userID,
-			status,
+			postgres.Int32(userID),
+			hydrateDomainToOrdersStatusEnum(status),
 		).
 		RETURNING(table.Orders.ID.AS("id"))
 }

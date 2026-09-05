@@ -245,6 +245,7 @@ func setupRouter(components *AppComponents, logger *zap.Logger) *chi.Mux {
 		r.Post("/api/user/orders", components.Handler.CreateOrder)
 		r.Get("/api/user/orders", components.Handler.UserOrdersList)
 		r.Post("/api/user/balance/withdraw", components.Handler.BalanceWithdraw)
+		r.Get("/api/user/withdrawals", components.Handler.UserWithdrawals)
 	})
 
 	return router

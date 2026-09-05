@@ -102,8 +102,8 @@ func (_c *MockRepository_BeginTransaction_Call) RunAndReturn(run func(ctx contex
 }
 
 // CountOrdersByUserID provides a mock function for the type MockRepository
-func (_mock *MockRepository) CountOrdersByUserID(ctx context.Context, userID int32) (int32, *entities.DomainError) {
-	ret := _mock.Called(ctx, userID)
+func (_mock *MockRepository) CountOrdersByUserID(ctx context.Context, orderFilter entities.OrderFilter) (int32, *entities.DomainError) {
+	ret := _mock.Called(ctx, orderFilter)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CountOrdersByUserID")
@@ -111,16 +111,16 @@ func (_mock *MockRepository) CountOrdersByUserID(ctx context.Context, userID int
 
 	var r0 int32
 	var r1 *entities.DomainError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int32) (int32, *entities.DomainError)); ok {
-		return returnFunc(ctx, userID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entities.OrderFilter) (int32, *entities.DomainError)); ok {
+		return returnFunc(ctx, orderFilter)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int32) int32); ok {
-		r0 = returnFunc(ctx, userID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entities.OrderFilter) int32); ok {
+		r0 = returnFunc(ctx, orderFilter)
 	} else {
 		r0 = ret.Get(0).(int32)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, int32) *entities.DomainError); ok {
-		r1 = returnFunc(ctx, userID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entities.OrderFilter) *entities.DomainError); ok {
+		r1 = returnFunc(ctx, orderFilter)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*entities.DomainError)
@@ -136,20 +136,20 @@ type MockRepository_CountOrdersByUserID_Call struct {
 
 // CountOrdersByUserID is a helper method to define mock.On call
 //   - ctx context.Context
-//   - userID int32
-func (_e *MockRepository_Expecter) CountOrdersByUserID(ctx any, userID any) *MockRepository_CountOrdersByUserID_Call {
-	return &MockRepository_CountOrdersByUserID_Call{Call: _e.mock.On("CountOrdersByUserID", ctx, userID)}
+//   - orderFilter entities.OrderFilter
+func (_e *MockRepository_Expecter) CountOrdersByUserID(ctx any, orderFilter any) *MockRepository_CountOrdersByUserID_Call {
+	return &MockRepository_CountOrdersByUserID_Call{Call: _e.mock.On("CountOrdersByUserID", ctx, orderFilter)}
 }
 
-func (_c *MockRepository_CountOrdersByUserID_Call) Run(run func(ctx context.Context, userID int32)) *MockRepository_CountOrdersByUserID_Call {
+func (_c *MockRepository_CountOrdersByUserID_Call) Run(run func(ctx context.Context, orderFilter entities.OrderFilter)) *MockRepository_CountOrdersByUserID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 int32
+		var arg1 entities.OrderFilter
 		if args[1] != nil {
-			arg1 = args[1].(int32)
+			arg1 = args[1].(entities.OrderFilter)
 		}
 		run(
 			arg0,
@@ -164,7 +164,7 @@ func (_c *MockRepository_CountOrdersByUserID_Call) Return(n int32, domainError *
 	return _c
 }
 
-func (_c *MockRepository_CountOrdersByUserID_Call) RunAndReturn(run func(ctx context.Context, userID int32) (int32, *entities.DomainError)) *MockRepository_CountOrdersByUserID_Call {
+func (_c *MockRepository_CountOrdersByUserID_Call) RunAndReturn(run func(ctx context.Context, orderFilter entities.OrderFilter) (int32, *entities.DomainError)) *MockRepository_CountOrdersByUserID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -388,8 +388,8 @@ func (_c *MockRepository_FindByOrderID_Call) RunAndReturn(run func(ctx context.C
 }
 
 // FindByUserID provides a mock function for the type MockRepository
-func (_mock *MockRepository) FindByUserID(ctx context.Context, userID int32, limit int64, offset int64) ([]entities.Order, *entities.DomainError) {
-	ret := _mock.Called(ctx, userID, limit, offset)
+func (_mock *MockRepository) FindByUserID(ctx context.Context, filter entities.OrderFilter, limit int64, offset int64) ([]entities.Order, *entities.DomainError) {
+	ret := _mock.Called(ctx, filter, limit, offset)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByUserID")
@@ -397,18 +397,18 @@ func (_mock *MockRepository) FindByUserID(ctx context.Context, userID int32, lim
 
 	var r0 []entities.Order
 	var r1 *entities.DomainError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int32, int64, int64) ([]entities.Order, *entities.DomainError)); ok {
-		return returnFunc(ctx, userID, limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entities.OrderFilter, int64, int64) ([]entities.Order, *entities.DomainError)); ok {
+		return returnFunc(ctx, filter, limit, offset)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int32, int64, int64) []entities.Order); ok {
-		r0 = returnFunc(ctx, userID, limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entities.OrderFilter, int64, int64) []entities.Order); ok {
+		r0 = returnFunc(ctx, filter, limit, offset)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]entities.Order)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, int32, int64, int64) *entities.DomainError); ok {
-		r1 = returnFunc(ctx, userID, limit, offset)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entities.OrderFilter, int64, int64) *entities.DomainError); ok {
+		r1 = returnFunc(ctx, filter, limit, offset)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*entities.DomainError)
@@ -424,22 +424,22 @@ type MockRepository_FindByUserID_Call struct {
 
 // FindByUserID is a helper method to define mock.On call
 //   - ctx context.Context
-//   - userID int32
+//   - filter entities.OrderFilter
 //   - limit int64
 //   - offset int64
-func (_e *MockRepository_Expecter) FindByUserID(ctx any, userID any, limit any, offset any) *MockRepository_FindByUserID_Call {
-	return &MockRepository_FindByUserID_Call{Call: _e.mock.On("FindByUserID", ctx, userID, limit, offset)}
+func (_e *MockRepository_Expecter) FindByUserID(ctx any, filter any, limit any, offset any) *MockRepository_FindByUserID_Call {
+	return &MockRepository_FindByUserID_Call{Call: _e.mock.On("FindByUserID", ctx, filter, limit, offset)}
 }
 
-func (_c *MockRepository_FindByUserID_Call) Run(run func(ctx context.Context, userID int32, limit int64, offset int64)) *MockRepository_FindByUserID_Call {
+func (_c *MockRepository_FindByUserID_Call) Run(run func(ctx context.Context, filter entities.OrderFilter, limit int64, offset int64)) *MockRepository_FindByUserID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 int32
+		var arg1 entities.OrderFilter
 		if args[1] != nil {
-			arg1 = args[1].(int32)
+			arg1 = args[1].(entities.OrderFilter)
 		}
 		var arg2 int64
 		if args[2] != nil {
@@ -464,7 +464,7 @@ func (_c *MockRepository_FindByUserID_Call) Return(orders []entities.Order, doma
 	return _c
 }
 
-func (_c *MockRepository_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userID int32, limit int64, offset int64) ([]entities.Order, *entities.DomainError)) *MockRepository_FindByUserID_Call {
+func (_c *MockRepository_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, filter entities.OrderFilter, limit int64, offset int64) ([]entities.Order, *entities.DomainError)) *MockRepository_FindByUserID_Call {
 	_c.Call.Return(run)
 	return _c
 }

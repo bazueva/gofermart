@@ -1,0 +1,21 @@
+goroutine 1 [running]:
+main.dumpGoroutines(0x79333b545500)
+	/Users/evgeniabazueva/яндекс обучение/gofermart/cmd/gophermart/main.go:187 +0x60
+main.checkGoroutineLeaks(0x2, 0x79333b545500)
+	/Users/evgeniabazueva/яндекс обучение/gofermart/cmd/gophermart/main.go:88 +0x2bc
+main.main()
+	/Users/evgeniabazueva/яндекс обучение/gofermart/cmd/gophermart/main.go:74 +0x4c4
+
+goroutine 8 [select]:
+database/sql.(*DB).connectionOpener(0x79333b6224e0, {0x1035862e8, 0x79333b3eaeb0})
+	/usr/local/go/src/database/sql/sql.go:1261 +0x9c
+created by database/sql.OpenDB in goroutine 1
+	/usr/local/go/src/database/sql/sql.go:841 +0x2a0
+
+goroutine 17 [syscall]:
+os/signal.signal_recv()
+	/usr/local/go/src/runtime/sigqueue.go:149 +0xa4
+os/signal.loop()
+	/usr/local/go/src/os/signal/signal_unix.go:23 +0x24
+created by os/signal.Notify.func1.1 in goroutine 1
+	/usr/local/go/src/os/signal/signal.go:152 +0x34

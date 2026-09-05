@@ -16,6 +16,10 @@ type Pagination struct {
 	totalCount int64
 }
 
+func (p *Pagination) TotalCount() int64 {
+	return p.totalCount
+}
+
 func (p *Pagination) setPage(page int64) {
 	if page <= 0 {
 		p.page = 1

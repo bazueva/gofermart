@@ -1,12 +1,13 @@
 package queries
 
 import (
+	"github.com/bazueva/gofermart/internal/domain/entities"
 	"github.com/bazueva/gofermart/schema.gen/gofermart/public/table"
 	"github.com/go-jet/jet/v2/postgres"
 )
 
-func NewFindByUserID(userID int32, limit, offset int64) postgres.SelectStatement {
-	return postgres.SELECT(
+func NewFindByUserID(filter entities.OrderFilter, limit, offset int64) postgres.SelectStatement {
+	query := postgres.SELECT(
 		table.Orders.ID,
 		table.Orders.OrderID,
 		table.Orders.Status,
@@ -15,8 +16,10 @@ func NewFindByUserID(userID int32, limit, offset int64) postgres.SelectStatement
 		table.Orders.ProcessedAt,
 		table.Orders.BonusSum,
 	).FROM(table.Orders).
-		WHERE(table.Orders.UserID.EQ(postgres.Int32(userID))).
+		WHERE(buildOrderFilterCondition(filter)).
 		ORDER_BY(table.Orders.CreatedAt.DESC()).
 		LIMIT(limit).
 		OFFSET(offset)
+
+	return query
 }

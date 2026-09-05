@@ -244,3 +244,79 @@ func (_c *MockOrderService_OrdersListUser_Call) RunAndReturn(run func(ctx contex
 	_c.Call.Return(run)
 	return _c
 }
+
+// OrdersWithdrawalsListUser provides a mock function for the type MockOrderService
+func (_mock *MockOrderService) OrdersWithdrawalsListUser(ctx context.Context, userID int32, newPagination *pagination.Pagination) ([]entities.Order, *entities.DomainError) {
+	ret := _mock.Called(ctx, userID, newPagination)
+
+	if len(ret) == 0 {
+		panic("no return value specified for OrdersWithdrawalsListUser")
+	}
+
+	var r0 []entities.Order
+	var r1 *entities.DomainError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int32, *pagination.Pagination) ([]entities.Order, *entities.DomainError)); ok {
+		return returnFunc(ctx, userID, newPagination)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int32, *pagination.Pagination) []entities.Order); ok {
+		r0 = returnFunc(ctx, userID, newPagination)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entities.Order)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int32, *pagination.Pagination) *entities.DomainError); ok {
+		r1 = returnFunc(ctx, userID, newPagination)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*entities.DomainError)
+		}
+	}
+	return r0, r1
+}
+
+// MockOrderService_OrdersWithdrawalsListUser_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'OrdersWithdrawalsListUser'
+type MockOrderService_OrdersWithdrawalsListUser_Call struct {
+	*mock.Call
+}
+
+// OrdersWithdrawalsListUser is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID int32
+//   - newPagination *pagination.Pagination
+func (_e *MockOrderService_Expecter) OrdersWithdrawalsListUser(ctx any, userID any, newPagination any) *MockOrderService_OrdersWithdrawalsListUser_Call {
+	return &MockOrderService_OrdersWithdrawalsListUser_Call{Call: _e.mock.On("OrdersWithdrawalsListUser", ctx, userID, newPagination)}
+}
+
+func (_c *MockOrderService_OrdersWithdrawalsListUser_Call) Run(run func(ctx context.Context, userID int32, newPagination *pagination.Pagination)) *MockOrderService_OrdersWithdrawalsListUser_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 int32
+		if args[1] != nil {
+			arg1 = args[1].(int32)
+		}
+		var arg2 *pagination.Pagination
+		if args[2] != nil {
+			arg2 = args[2].(*pagination.Pagination)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockOrderService_OrdersWithdrawalsListUser_Call) Return(orders []entities.Order, domainError *entities.DomainError) *MockOrderService_OrdersWithdrawalsListUser_Call {
+	_c.Call.Return(orders, domainError)
+	return _c
+}
+
+func (_c *MockOrderService_OrdersWithdrawalsListUser_Call) RunAndReturn(run func(ctx context.Context, userID int32, newPagination *pagination.Pagination) ([]entities.Order, *entities.DomainError)) *MockOrderService_OrdersWithdrawalsListUser_Call {
+	_c.Call.Return(run)
+	return _c
+}

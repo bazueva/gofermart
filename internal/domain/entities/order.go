@@ -25,3 +25,16 @@ type BalanceWithdraw struct {
 	Order string
 	Sum   float64
 }
+
+type OrderFilterOrderType int
+
+const (
+	OrderFilterAddBalanceType OrderFilterOrderType = iota
+	OrderFilterWriteOffBalanceType
+)
+
+type OrderFilter struct {
+	OrderType *OrderFilterOrderType
+	UserID    int32
+	Statuses  []OrderStatus
+}

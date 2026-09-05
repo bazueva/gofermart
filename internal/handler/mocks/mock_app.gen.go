@@ -368,3 +368,79 @@ func (_c *MockApp_UserOrdersList_Call) RunAndReturn(run func(ctx context.Context
 	_c.Call.Return(run)
 	return _c
 }
+
+// UserWithdrawals provides a mock function for the type MockApp
+func (_mock *MockApp) UserWithdrawals(ctx context.Context, toInt32 int32, toInt33 int32) ([]entities.Order, *entities.DomainError) {
+	ret := _mock.Called(ctx, toInt32, toInt33)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UserWithdrawals")
+	}
+
+	var r0 []entities.Order
+	var r1 *entities.DomainError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int32, int32) ([]entities.Order, *entities.DomainError)); ok {
+		return returnFunc(ctx, toInt32, toInt33)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int32, int32) []entities.Order); ok {
+		r0 = returnFunc(ctx, toInt32, toInt33)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entities.Order)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int32, int32) *entities.DomainError); ok {
+		r1 = returnFunc(ctx, toInt32, toInt33)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*entities.DomainError)
+		}
+	}
+	return r0, r1
+}
+
+// MockApp_UserWithdrawals_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UserWithdrawals'
+type MockApp_UserWithdrawals_Call struct {
+	*mock.Call
+}
+
+// UserWithdrawals is a helper method to define mock.On call
+//   - ctx context.Context
+//   - toInt32 int32
+//   - toInt33 int32
+func (_e *MockApp_Expecter) UserWithdrawals(ctx any, toInt32 any, toInt33 any) *MockApp_UserWithdrawals_Call {
+	return &MockApp_UserWithdrawals_Call{Call: _e.mock.On("UserWithdrawals", ctx, toInt32, toInt33)}
+}
+
+func (_c *MockApp_UserWithdrawals_Call) Run(run func(ctx context.Context, toInt32 int32, toInt33 int32)) *MockApp_UserWithdrawals_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 int32
+		if args[1] != nil {
+			arg1 = args[1].(int32)
+		}
+		var arg2 int32
+		if args[2] != nil {
+			arg2 = args[2].(int32)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockApp_UserWithdrawals_Call) Return(orders []entities.Order, domainError *entities.DomainError) *MockApp_UserWithdrawals_Call {
+	_c.Call.Return(orders, domainError)
+	return _c
+}
+
+func (_c *MockApp_UserWithdrawals_Call) RunAndReturn(run func(ctx context.Context, toInt32 int32, toInt33 int32) ([]entities.Order, *entities.DomainError)) *MockApp_UserWithdrawals_Call {
+	_c.Call.Return(run)
+	return _c
+}

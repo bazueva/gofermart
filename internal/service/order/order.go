@@ -14,8 +14,8 @@ import (
 type Repository interface {
 	FindByOrderID(ctx context.Context, orderID string) (*entities.Order, *entities.DomainError)
 	CreateOrder(ctx context.Context, orderID string, userID int32, status entities.OrderStatus) *entities.DomainError
-	FindByUserID(ctx context.Context, userID int32, limit int64, offset int64) ([]entities.Order, *entities.DomainError)
-	CountOrdersByUserID(ctx context.Context, userID int32) (int32, *entities.DomainError)
+	FindByUserID(ctx context.Context, filter entities.OrderFilter, limit int64, offset int64) ([]entities.Order, *entities.DomainError)
+	CountOrdersByUserID(ctx context.Context, orderFilter entities.OrderFilter) (int32, *entities.DomainError)
 	UserBalance(ctx context.Context, db interfaces.Tx, id int32) (float64, *entities.DomainError)
 	CreateOrderWithWithdraw(ctx context.Context, db interfaces.Tx, userID int32, orderID string, bonusSum float64) *entities.DomainError
 	BeginTransaction(ctx context.Context) (interfaces.Tx, error)
@@ -29,6 +29,36 @@ type Order struct {
 	repository Repository
 	logger     interfaces.Logger
 	orderQueue OrderQueue
+}
+
+func (o *Order) OrdersWithdrawalsListUser(
+	ctx context.Context,
+	userID int32,
+	pagination *pagination.Pagination,
+) ([]entities.Order, *entities.DomainError) {
+	ordersFilter := entities.OrderFilter{UserID: userID, OrderType: new(entities.OrderFilterWriteOffBalanceType)}
+
+	countOrders, err := o.repository.CountOrdersByUserID(ctx, ordersFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	if countOrders == 0 {
+		return nil, nil
+	}
+
+	pagination.SetTotalCount(int64(countOrders))
+
+	orders, err := o.repository.FindByUserID(
+		ctx,
+		ordersFilter,
+		pagination.GetPerPage(), pagination.GetOffset(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return orders, nil
 }
 
 const (
@@ -95,7 +125,9 @@ func (o *Order) OrdersListUser(
 	userID int32,
 	pagination *pagination.Pagination,
 ) ([]entities.Order, *entities.DomainError) {
-	countOrders, err := o.repository.CountOrdersByUserID(ctx, userID)
+	ordersFilter := entities.OrderFilter{UserID: userID, OrderType: new(entities.OrderFilterAddBalanceType)}
+
+	countOrders, err := o.repository.CountOrdersByUserID(ctx, ordersFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +138,11 @@ func (o *Order) OrdersListUser(
 
 	pagination.SetTotalCount(int64(countOrders))
 
-	orders, err := o.repository.FindByUserID(ctx, userID, pagination.GetPerPage(), pagination.GetOffset())
+	orders, err := o.repository.FindByUserID(
+		ctx,
+		ordersFilter,
+		pagination.GetPerPage(), pagination.GetOffset(),
+	)
 	if err != nil {
 		return nil, err
 	}

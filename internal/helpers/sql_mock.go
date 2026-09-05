@@ -3,6 +3,7 @@ package helpers
 import (
 	"database/sql"
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -25,4 +26,13 @@ func SQLMockTest(t *testing.T) (*sql.DB, sqlmock.Sqlmock, error) {
 			return nil
 		})),
 	)
+}
+
+func NormalizeSQL(sql string) string {
+	sql = strings.ReplaceAll(sql, "\t", " ")
+
+	reSpaces := regexp.MustCompile(`\s+`)
+	sql = reSpaces.ReplaceAllString(sql, " ")
+
+	return strings.TrimSpace(sql)
 }
