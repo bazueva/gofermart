@@ -12,10 +12,9 @@ import (
 )
 
 type Users struct {
-	ID            int32 `sql:"primary_key"`
-	Login         string
-	PasswordHash  string
-	CreatedAt     *time.Time
-	UpdatedAt     *time.Time
-	LastVisitedAt *time.Time
+	ID           int32 `sql:"primary_key"`
+	Login        string
+	PasswordHash string
+	CreatedAt    *time.Time
+	UpdatedAt    *time.Time
 }

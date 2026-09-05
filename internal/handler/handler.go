@@ -250,12 +250,11 @@ func (h *Handler) UserWithdrawals(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	result := make([]models.Order, len(withdrawals))
+	result := make([]models.Withdrawal, len(withdrawals))
 	for i, order := range withdrawals {
-		result[i] = models.Order{
-			Number:  order.OrderID,
-			Status:  string(order.Status),
-			Accrual: order.BonusSum * -1,
+		result[i] = models.Withdrawal{
+			Order: order.OrderID,
+			Sum:   order.BonusSum * -1,
 			ProcessedAt: func() string {
 				if order.ProcessedAt != nil {
 					return order.ProcessedAt.Format("2006-01-02T15:04:05-07:00")

@@ -17,12 +17,11 @@ type usersTable struct {
 	postgres.Table
 
 	// Columns
-	ID            postgres.ColumnInteger
-	Login         postgres.ColumnString
-	PasswordHash  postgres.ColumnString
-	CreatedAt     postgres.ColumnTimestampz
-	UpdatedAt     postgres.ColumnTimestampz
-	LastVisitedAt postgres.ColumnTimestampz
+	ID           postgres.ColumnInteger
+	Login        postgres.ColumnString
+	PasswordHash postgres.ColumnString
+	CreatedAt    postgres.ColumnTimestampz
+	UpdatedAt    postgres.ColumnTimestampz
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -64,27 +63,25 @@ func newUsersTable(schemaName, tableName, alias string) *UsersTable {
 
 func newUsersTableImpl(schemaName, tableName, alias string) usersTable {
 	var (
-		IDColumn            = postgres.IntegerColumn("id")
-		LoginColumn         = postgres.StringColumn("login")
-		PasswordHashColumn  = postgres.StringColumn("password_hash")
-		CreatedAtColumn     = postgres.TimestampzColumn("created_at")
-		UpdatedAtColumn     = postgres.TimestampzColumn("updated_at")
-		LastVisitedAtColumn = postgres.TimestampzColumn("last_visited_at")
-		allColumns          = postgres.ColumnList{IDColumn, LoginColumn, PasswordHashColumn, CreatedAtColumn, UpdatedAtColumn, LastVisitedAtColumn}
-		mutableColumns      = postgres.ColumnList{LoginColumn, PasswordHashColumn, CreatedAtColumn, UpdatedAtColumn, LastVisitedAtColumn}
-		defaultColumns      = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, LastVisitedAtColumn}
+		IDColumn           = postgres.IntegerColumn("id")
+		LoginColumn        = postgres.StringColumn("login")
+		PasswordHashColumn = postgres.StringColumn("password_hash")
+		CreatedAtColumn    = postgres.TimestampzColumn("created_at")
+		UpdatedAtColumn    = postgres.TimestampzColumn("updated_at")
+		allColumns         = postgres.ColumnList{IDColumn, LoginColumn, PasswordHashColumn, CreatedAtColumn, UpdatedAtColumn}
+		mutableColumns     = postgres.ColumnList{LoginColumn, PasswordHashColumn, CreatedAtColumn, UpdatedAtColumn}
+		defaultColumns     = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn}
 	)
 
 	return usersTable{
 		Table: postgres.NewTable(schemaName, tableName, alias, allColumns...),
 
 		//Columns
-		ID:            IDColumn,
-		Login:         LoginColumn,
-		PasswordHash:  PasswordHashColumn,
-		CreatedAt:     CreatedAtColumn,
-		UpdatedAt:     UpdatedAtColumn,
-		LastVisitedAt: LastVisitedAtColumn,
+		ID:           IDColumn,
+		Login:        LoginColumn,
+		PasswordHash: PasswordHashColumn,
+		CreatedAt:    CreatedAtColumn,
+		UpdatedAt:    UpdatedAtColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,
