@@ -84,8 +84,6 @@ func checkGoroutineLeaks(initial int, logger *zap.Logger) {
 			zap.Int("final", final),
 			zap.Int("difference", final-initial),
 		)
-		// Делаем дамп для анализа
-		dumpGoroutines(logger)
 	} else {
 		logger.Info("✅ Все горутины завершились корректно",
 			zap.Int("count", final),
@@ -245,6 +243,7 @@ func setupRouter(components *AppComponents, logger *zap.Logger) *chi.Mux {
 		r.Post("/api/user/orders", components.Handler.CreateOrder)
 		r.Get("/api/user/orders", components.Handler.UserOrdersList)
 		r.Post("/api/user/balance/withdraw", components.Handler.BalanceWithdraw)
+		r.Get("/api/user/withdrawals", components.Handler.UserWithdrawals)
 	})
 
 	return router

@@ -249,37 +249,40 @@ func TestOrder_OrdersListUser(t *testing.T) {
 		mockRepo := mocks.NewMockRepository(t)
 
 		ctx := t.Context()
-		userID := int32(123)
+		filter := entities.OrderFilter{
+			UserID:    int32(123),
+			OrderType: new(entities.OrderFilterAddBalanceType),
+		}
 		pag := pagination.NewPagination(1, 20)
 
 		expectedOrders := []entities.Order{
 			{
 				ID:      1,
 				OrderID: "12345678903",
-				UserID:  userID,
+				UserID:  filter.UserID,
 				Status:  entities.OrdersStatusNew,
 			},
 			{
 				ID:      2,
 				OrderID: "123456789015",
-				UserID:  userID,
+				UserID:  filter.UserID,
 				Status:  entities.OrdersStatusProcessed,
 			},
 		}
 
 		mockRepo.EXPECT().
-			CountOrdersByUserID(ctx, userID).
+			CountOrdersByUserID(ctx, filter).
 			Return(int32(2), nil)
 
 		mockRepo.EXPECT().
-			FindByUserID(ctx, userID, int64(20), int64(0)).
+			FindByUserID(ctx, filter, int64(20), int64(0)).
 			Return(expectedOrders, nil)
 
 		o := &Order{
 			repository: mockRepo,
 		}
 
-		orders, err := o.OrdersListUser(ctx, userID, pag)
+		orders, err := o.OrdersListUser(ctx, filter.UserID, pag)
 
 		assert.Nil(t, err)
 		assert.Len(t, orders, 2)
@@ -289,18 +292,163 @@ func TestOrder_OrdersListUser(t *testing.T) {
 		mockRepo := mocks.NewMockRepository(t)
 
 		ctx := t.Context()
-		userID := int32(123)
+		filter := entities.OrderFilter{
+			UserID:    int32(123),
+			OrderType: new(entities.OrderFilterAddBalanceType),
+		}
 		pag := pagination.NewPagination(1, 20)
 
 		mockRepo.EXPECT().
-			CountOrdersByUserID(ctx, userID).
+			CountOrdersByUserID(ctx, filter).
 			Return(int32(0), nil)
 
 		o := &Order{
 			repository: mockRepo,
 		}
 
-		orders, err := o.OrdersListUser(ctx, userID, pag)
+		orders, err := o.OrdersListUser(ctx, filter.UserID, pag)
+
+		assert.Nil(t, err)
+		assert.Nil(t, orders)
+	})
+
+	t.Run("error - count orders failed", func(t *testing.T) {
+		mockRepo := mocks.NewMockRepository(t)
+
+		ctx := t.Context()
+		filter := entities.OrderFilter{
+			UserID:    int32(123),
+			OrderType: new(entities.OrderFilterAddBalanceType),
+		}
+		pag := pagination.NewPagination(1, 20)
+
+		domainErr := entities.NewInternalServerError(
+			errors.New("database error"),
+			"failed to count orders",
+		)
+
+		mockRepo.EXPECT().
+			CountOrdersByUserID(ctx, filter).
+			Return(int32(0), domainErr)
+
+		o := &Order{
+			repository: mockRepo,
+		}
+
+		orders, err := o.OrdersListUser(ctx, filter.UserID, pag)
+
+		assert.Error(t, err)
+		assert.Nil(t, orders)
+		assert.Equal(t, domainErr, err)
+	})
+
+	t.Run("error - find orders failed", func(t *testing.T) {
+		mockRepo := mocks.NewMockRepository(t)
+
+		ctx := t.Context()
+		filter := entities.OrderFilter{
+			UserID:    int32(123),
+			OrderType: new(entities.OrderFilterAddBalanceType),
+		}
+		pag := pagination.NewPagination(1, 20)
+
+		domainErr := entities.NewInternalServerError(
+			errors.New("database error"),
+			"failed to find orders",
+		)
+
+		mockRepo.EXPECT().
+			CountOrdersByUserID(ctx, filter).
+			Return(int32(2), nil)
+
+		mockRepo.EXPECT().
+			FindByUserID(ctx, filter, pag.GetPerPage(), pag.GetOffset()).
+			Return(nil, domainErr)
+
+		o := &Order{
+			repository: mockRepo,
+		}
+
+		orders, err := o.OrdersListUser(ctx, filter.UserID, pag)
+
+		assert.Error(t, err)
+		assert.Nil(t, orders)
+		assert.Equal(t, domainErr, err)
+	})
+}
+
+func TestOrder_OrdersWithdrawalsListUser(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - get withdrawals list", func(t *testing.T) {
+		mockRepo := mocks.NewMockRepository(t)
+
+		ctx := t.Context()
+		userID := int32(123)
+		pag := pagination.NewPagination(1, 20)
+
+		ordersFilter := entities.OrderFilter{
+			UserID:    userID,
+			OrderType: new(entities.OrderFilterWriteOffBalanceType),
+		}
+
+		expectedOrders := []entities.Order{
+			{
+				ID:       1,
+				OrderID:  "12345678903",
+				UserID:   userID,
+				Status:   entities.OrdersStatusProcessed,
+				BonusSum: -100.50,
+			},
+			{
+				ID:       2,
+				OrderID:  "123456789015",
+				UserID:   userID,
+				Status:   entities.OrdersStatusProcessed,
+				BonusSum: -200.00,
+			},
+		}
+
+		mockRepo.EXPECT().
+			CountOrdersByUserID(ctx, ordersFilter).
+			Return(int32(2), nil)
+
+		mockRepo.EXPECT().
+			FindByUserID(ctx, ordersFilter, pag.GetPerPage(), pag.GetOffset()).
+			Return(expectedOrders, nil)
+
+		o := &Order{
+			repository: mockRepo,
+		}
+
+		orders, err := o.OrdersWithdrawalsListUser(ctx, userID, pag)
+
+		assert.Nil(t, err)
+		assert.Len(t, orders, 2)
+		assert.Equal(t, int64(2), pag.TotalCount())
+	})
+
+	t.Run("success - no withdrawals found", func(t *testing.T) {
+		mockRepo := mocks.NewMockRepository(t)
+
+		ctx := t.Context()
+		userID := int32(123)
+		pag := pagination.NewPagination(1, 20)
+
+		ordersFilter := entities.OrderFilter{
+			UserID:    userID,
+			OrderType: new(entities.OrderFilterWriteOffBalanceType),
+		}
+
+		mockRepo.EXPECT().
+			CountOrdersByUserID(ctx, ordersFilter).
+			Return(int32(0), nil)
+
+		o := &Order{
+			repository: mockRepo,
+		}
+
+		orders, err := o.OrdersWithdrawalsListUser(ctx, userID, pag)
 
 		assert.Nil(t, err)
 		assert.Nil(t, orders)
@@ -313,20 +461,25 @@ func TestOrder_OrdersListUser(t *testing.T) {
 		userID := int32(123)
 		pag := pagination.NewPagination(1, 20)
 
+		ordersFilter := entities.OrderFilter{
+			UserID:    userID,
+			OrderType: new(entities.OrderFilterWriteOffBalanceType),
+		}
+
 		domainErr := entities.NewInternalServerError(
 			errors.New("database error"),
 			"failed to count orders",
 		)
 
 		mockRepo.EXPECT().
-			CountOrdersByUserID(ctx, userID).
+			CountOrdersByUserID(ctx, ordersFilter).
 			Return(int32(0), domainErr)
 
 		o := &Order{
 			repository: mockRepo,
 		}
 
-		orders, err := o.OrdersListUser(ctx, userID, pag)
+		orders, err := o.OrdersWithdrawalsListUser(ctx, userID, pag)
 
 		assert.Error(t, err)
 		assert.Nil(t, orders)
@@ -340,24 +493,29 @@ func TestOrder_OrdersListUser(t *testing.T) {
 		userID := int32(123)
 		pag := pagination.NewPagination(1, 20)
 
+		ordersFilter := entities.OrderFilter{
+			UserID:    userID,
+			OrderType: new(entities.OrderFilterWriteOffBalanceType),
+		}
+
 		domainErr := entities.NewInternalServerError(
 			errors.New("database error"),
 			"failed to find orders",
 		)
 
 		mockRepo.EXPECT().
-			CountOrdersByUserID(ctx, userID).
+			CountOrdersByUserID(ctx, ordersFilter).
 			Return(int32(2), nil)
 
 		mockRepo.EXPECT().
-			FindByUserID(ctx, userID, pag.GetPerPage(), pag.GetOffset()).
+			FindByUserID(ctx, ordersFilter, pag.GetPerPage(), pag.GetOffset()).
 			Return(nil, domainErr)
 
 		o := &Order{
 			repository: mockRepo,
 		}
 
-		orders, err := o.OrdersListUser(ctx, userID, pag)
+		orders, err := o.OrdersWithdrawalsListUser(ctx, userID, pag)
 
 		assert.Error(t, err)
 		assert.Nil(t, orders)

@@ -20,6 +20,7 @@ type App interface {
 	CreateOrder(ctx context.Context, id string) *entities.DomainError
 	UserOrdersList(ctx context.Context, page int32, perPage int32) ([]entities.Order, *entities.DomainError)
 	BalanceWithDraw(ctx context.Context, request models.BalanceWithdrawRequest) *entities.DomainError
+	UserWithdrawals(ctx context.Context, toInt32 int32, toInt33 int32) ([]entities.Order, *entities.DomainError)
 }
 
 type Handler struct {
@@ -225,4 +226,51 @@ func (h *Handler) BalanceWithdraw(writer http.ResponseWriter, request *http.Requ
 	}
 
 	writer.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) UserWithdrawals(writer http.ResponseWriter, request *http.Request) {
+	withdrawals, errDomain := h.app.UserWithdrawals(
+		request.Context(),
+		cast.ToInt32(request.URL.Query().Get("page")),
+		cast.ToInt32(request.URL.Query().Get("perPage")),
+	)
+
+	if errDomain != nil {
+		h.errorHandler(writer, errDomain, 0)
+
+		return
+	}
+
+	if len(withdrawals) == 0 {
+		writer.WriteHeader(http.StatusNoContent)
+
+		return
+	}
+
+	result := make([]models.Order, len(withdrawals))
+	for i, order := range withdrawals {
+		result[i] = models.Order{
+			Number:  order.OrderID,
+			Status:  string(order.Status),
+			Accrual: order.BonusSum * -1,
+			ProcessedAt: func() string {
+				if order.ProcessedAt != nil {
+					return order.ProcessedAt.Format("2006-01-02T15:04:05-07:00")
+				}
+
+				return ""
+			}(),
+		}
+	}
+
+	resultJSON, err := json.Marshal(result)
+	if err != nil {
+		h.logger.Error("error marshal []order", zap.Error(err))
+
+		h.errorHandler(writer, entities.NewInternalServerError(err, ""), 0)
+
+		return
+	}
+
+	writer.Write(resultJSON)
 }

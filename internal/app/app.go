@@ -23,12 +23,27 @@ type OrderService interface {
 	CreateOrder(ctx context.Context, orderID string, userID int32) *entities.DomainError
 	OrdersListUser(ctx context.Context, userID int32, pagination *pagination.Pagination) ([]entities.Order, *entities.DomainError)
 	BalanceWithdraw(ctx context.Context, userID int32, withdraw entities.BalanceWithdraw) *entities.DomainError
+	OrdersWithdrawalsListUser(ctx context.Context, userID int32, newPagination *pagination.Pagination) ([]entities.Order, *entities.DomainError)
 }
 
 type App struct {
 	userService  UserService
 	orderService OrderService
 	logger       interfaces.Logger
+}
+
+func (a *App) UserWithdrawals(ctx context.Context, page int32, perPage int32) ([]entities.Order, *entities.DomainError) {
+	userID, err := a.userIDFromContext(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+
+	orders, err := a.orderService.OrdersWithdrawalsListUser(ctx, userID, pagination.NewPagination(int64(page), int64(perPage)))
+	if err != nil {
+		return nil, err
+	}
+
+	return orders, nil
 }
 
 func (a *App) BalanceWithDraw(ctx context.Context, request models.BalanceWithdrawRequest) *entities.DomainError {

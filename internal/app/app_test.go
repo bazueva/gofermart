@@ -517,3 +517,137 @@ func TestApp_BalanceWithDraw(t *testing.T) {
 		assert.Equal(t, domainErr, err)
 	})
 }
+
+func TestApp_UserWithdrawals(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - get user withdrawals", func(t *testing.T) {
+		mockOrderService := appMocks.NewMockOrderService(t)
+		logger := mocks.NewMockLogger(t)
+
+		ctx := context.NewAuth(t.Context()).WithUserID(123)
+		page := int32(1)
+		perPage := int32(20)
+
+		expectedOrders := []entities.Order{
+			{
+				ID:       1,
+				OrderID:  "12345678903",
+				UserID:   123,
+				Status:   entities.OrdersStatusProcessed,
+				BonusSum: -100.50,
+			},
+			{
+				ID:       2,
+				OrderID:  "123456789015",
+				UserID:   123,
+				Status:   entities.OrdersStatusProcessed,
+				BonusSum: -200.00,
+			},
+		}
+
+		mockOrderService.EXPECT().
+			OrdersWithdrawalsListUser(ctx, int32(123), pagination.NewPagination(int64(page), int64(perPage))).
+			Return(expectedOrders, nil)
+
+		a := &App{
+			orderService: mockOrderService,
+			logger:       logger,
+		}
+
+		orders, err := a.UserWithdrawals(ctx, page, perPage)
+
+		assert.Nil(t, err)
+		assert.Equal(t, expectedOrders, orders)
+	})
+
+	t.Run("success - empty withdrawals list", func(t *testing.T) {
+		mockOrderService := appMocks.NewMockOrderService(t)
+		logger := mocks.NewMockLogger(t)
+
+		ctx := context.NewAuth(t.Context()).WithUserID(123)
+		page := int32(1)
+		perPage := int32(20)
+
+		mockOrderService.EXPECT().
+			OrdersWithdrawalsListUser(ctx, int32(123), pagination.NewPagination(int64(page), int64(perPage))).
+			Return([]entities.Order{}, nil)
+
+		a := &App{
+			orderService: mockOrderService,
+			logger:       logger,
+		}
+
+		orders, err := a.UserWithdrawals(ctx, page, perPage)
+
+		assert.Nil(t, err)
+		assert.Empty(t, orders)
+	})
+
+	t.Run("error - user not authorized", func(t *testing.T) {
+		logger := mocks.NewMockLogger(t)
+
+		ctx := context.NewAuth(t.Context()).WithUserID(0)
+		page := int32(1)
+		perPage := int32(20)
+
+		a := &App{
+			logger: logger,
+		}
+
+		orders, err := a.UserWithdrawals(ctx, page, perPage)
+
+		assert.Error(t, err)
+		assert.Nil(t, orders)
+		assert.Equal(t, entities.UnauthorizedErrorType, err.ErrorType)
+	})
+
+	t.Run("error - context without Auth", func(t *testing.T) {
+		logger := mocks.NewMockLogger(t)
+
+		ctx := t.Context()
+		page := int32(1)
+		perPage := int32(20)
+
+		a := &App{
+			logger: logger,
+		}
+
+		logger.EXPECT().Error("ctx is not contextAuth", mock2.Anything).Return()
+
+		orders, err := a.UserWithdrawals(ctx, page, perPage)
+
+		assert.Error(t, err)
+		assert.Nil(t, orders)
+		assert.Equal(t, entities.InternalServerErrorType, err.ErrorType)
+	})
+
+	t.Run("error - order service failed", func(t *testing.T) {
+		mockOrderService := appMocks.NewMockOrderService(t)
+		logger := mocks.NewMockLogger(t)
+
+		ctx := context.NewAuth(t.Context()).WithUserID(123)
+		page := int32(1)
+		perPage := int32(20)
+
+		domainErr := entities.NewInternalServerError(
+			errors.New("database error"),
+			"failed to get withdrawals",
+		)
+
+		mockOrderService.EXPECT().
+			OrdersWithdrawalsListUser(ctx, int32(123), pagination.NewPagination(int64(page), int64(perPage))).
+			Return(nil, domainErr)
+
+		a := &App{
+			orderService: mockOrderService,
+			logger:       logger,
+		}
+
+		orders, err := a.UserWithdrawals(ctx, page, perPage)
+
+		assert.Error(t, err)
+		assert.Nil(t, orders)
+		assert.Equal(t, domainErr, err)
+	})
+}

@@ -41,7 +41,7 @@ func TestRepository_CreateOrder(t *testing.T) {
 		status := entities.OrdersStatusNew
 
 		expectedSQL := `INSERT INTO public.orders (order_id, user_id, status)
-        VALUES ($1, $2, 'NEW')
+        VALUES ($1, $2::integer, 'NEW')
         RETURNING orders.id AS "id";`
 
 		mock.ExpectQuery(expectedSQL).
@@ -74,11 +74,11 @@ func TestRepository_CreateOrder(t *testing.T) {
 		status := entities.OrdersStatusProcessing
 
 		expectedSQL := `INSERT INTO public.orders (order_id, user_id, status)
-        VALUES ($1, $2, 'PROCESSING')
+        VALUES ($1, $2::integer, 'PROCESSING')
         RETURNING orders.id AS "id";`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(orderID, userID, hydrateDomainToOrdersStatusEnum(status)).
+			WithArgs(orderID, userID, status).
 			WillReturnError(errorDB)
 
 		err = repo.CreateOrder(ctx, orderID, userID, status)
@@ -107,10 +107,12 @@ func TestRepository_CreateOrder(t *testing.T) {
 		userID := int32(123)
 		status := entities.OrdersStatusInvalid
 
-		expectedSQL := `INSERT INTO orders (order_id, user_id, status) VALUES ($1, $2, $3) RETURNING id`
+		expectedSQL := `INSERT INTO public.orders (order_id, user_id, status)
+        VALUES ($1, $2::integer, 'INVALID')
+        RETURNING orders.id AS "id";`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(orderID, userID, hydrateDomainToOrdersStatusEnum(status)).
+			WithArgs(orderID, userID, status).
 			WillReturnError(context.DeadlineExceeded)
 
 		err = repo.CreateOrder(ctx, orderID, userID, status)
@@ -285,7 +287,9 @@ func TestRepository_CountOrdersByUserID(t *testing.T) {
 		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
-		userID := int32(123)
+		filter := entities.OrderFilter{
+			UserID: int32(123),
+		}
 		expectedSQL := `SELECT COUNT(orders.id) AS "count"
         FROM public.orders
         WHERE orders.user_id = $1::integer;`
@@ -294,10 +298,10 @@ func TestRepository_CountOrdersByUserID(t *testing.T) {
 			AddRow(1)
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(userID).
+			WithArgs(filter.UserID).
 			WillReturnRows(rows)
 
-		result, err := repo.CountOrdersByUserID(ctx, userID)
+		result, err := repo.CountOrdersByUserID(ctx, filter)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
@@ -321,16 +325,18 @@ func TestRepository_CountOrdersByUserID(t *testing.T) {
 		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
-		userID := int32(123)
+		filter := entities.OrderFilter{
+			UserID: int32(123),
+		}
 		expectedSQL := `SELECT COUNT(orders.id) AS "count"
         FROM public.orders
         WHERE orders.user_id = $1::integer;`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(userID).
+			WithArgs(filter.UserID).
 			WillReturnError(errorDB)
 
-		result, err := repo.CountOrdersByUserID(ctx, userID)
+		result, err := repo.CountOrdersByUserID(ctx, filter)
 
 		assert.Equal(t, int32(0), result)
 		assert.IsType(t, &entities.DomainError{}, err)
@@ -352,16 +358,18 @@ func TestRepository_CountOrdersByUserID(t *testing.T) {
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 
-		userID := int32(123)
+		filter := entities.OrderFilter{
+			UserID: int32(123),
+		}
 		expectedSQL := `SELECT COUNT(orders.id) AS "count"
         FROM public.orders
         WHERE orders.user_id = $1::integer;`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(userID).
+			WithArgs(filter.UserID).
 			WillReturnError(context.DeadlineExceeded)
 
-		result, err := repo.CountOrdersByUserID(ctx, userID)
+		result, err := repo.CountOrdersByUserID(ctx, filter)
 
 		assert.Error(t, err)
 		assert.Equal(t, int32(0), result)
@@ -386,7 +394,9 @@ func TestRepository_FindByUserID(t *testing.T) {
 		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
-		userID := int32(123)
+		filter := entities.OrderFilter{
+			UserID: int32(123),
+		}
 		limit := int64(20)
 		offset := int64(0)
 
@@ -409,10 +419,10 @@ func TestRepository_FindByUserID(t *testing.T) {
 			AddRow(2, "123456789015", "PROCESSED", 123, createdAt)
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(userID, limit, offset).
+			WithArgs(filter.UserID, limit, offset).
 			WillReturnRows(rows)
 
-		result, err := repo.FindByUserID(ctx, userID, limit, offset)
+		result, err := repo.FindByUserID(ctx, filter, limit, offset)
 
 		assert.Nil(t, err)
 		assert.Len(t, result, 2)
@@ -446,7 +456,9 @@ func TestRepository_FindByUserID(t *testing.T) {
 		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
-		userID := int32(123)
+		filter := entities.OrderFilter{
+			UserID: int32(123),
+		}
 		limit := int64(20)
 		offset := int64(0)
 
@@ -464,10 +476,10 @@ func TestRepository_FindByUserID(t *testing.T) {
         OFFSET $3;`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(userID, limit, offset).
+			WithArgs(filter.UserID, limit, offset).
 			WillReturnError(qrm.ErrNoRows)
 
-		result, err := repo.FindByUserID(ctx, userID, limit, offset)
+		result, err := repo.FindByUserID(ctx, filter, limit, offset)
 
 		assert.Nil(t, err)
 		assert.Empty(t, result)
@@ -490,7 +502,9 @@ func TestRepository_FindByUserID(t *testing.T) {
 		repo := NewRepository(dbWrapper, logger)
 		ctx := t.Context()
 
-		userID := int32(123)
+		filter := entities.OrderFilter{
+			UserID: int32(123),
+		}
 		limit := int64(20)
 		offset := int64(0)
 
@@ -508,10 +522,10 @@ func TestRepository_FindByUserID(t *testing.T) {
         OFFSET $3;`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(userID, limit, offset).
+			WithArgs(filter.UserID, limit, offset).
 			WillReturnError(errorDB)
 
-		result, err := repo.FindByUserID(ctx, userID, limit, offset)
+		result, err := repo.FindByUserID(ctx, filter, limit, offset)
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
@@ -534,7 +548,9 @@ func TestRepository_FindByUserID(t *testing.T) {
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 
-		userID := int32(123)
+		filter := entities.OrderFilter{
+			UserID: int32(123),
+		}
 		limit := int64(20)
 		offset := int64(0)
 
@@ -550,10 +566,10 @@ func TestRepository_FindByUserID(t *testing.T) {
         OFFSET $3;`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(userID, limit, offset).
+			WithArgs(filter.UserID, limit, offset).
 			WillReturnError(context.DeadlineExceeded)
 
-		result, err := repo.FindByUserID(ctx, userID, limit, offset)
+		result, err := repo.FindByUserID(ctx, filter, limit, offset)
 
 		assert.Error(t, err)
 		assert.Nil(t, result)

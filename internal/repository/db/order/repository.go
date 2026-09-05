@@ -10,7 +10,6 @@ import (
 	dbPkg "github.com/bazueva/gofermart/internal/repository/db"
 	"github.com/bazueva/gofermart/internal/repository/db/order/queries"
 	"github.com/bazueva/gofermart/schema.gen/gofermart/public/model"
-	"github.com/go-jet/jet/v2/postgres"
 	"github.com/go-jet/jet/v2/qrm"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
@@ -34,7 +33,7 @@ func (r *repository) CreateOrderWithWithdraw(ctx context.Context, tx interfaces.
 		orderID,
 		userID,
 		bonusSum*-1,
-		hydrateDomainToOrdersStatusEnum(entities.OrdersStatusProcessed),
+		entities.OrdersStatusProcessed,
 	).
 		ExecContext(ctxWithTimeout, tx)
 	if err != nil {
@@ -70,13 +69,9 @@ func (r *repository) FindStaleOrders(ctx context.Context, statuses []entities.Or
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
-	tableStatuses := lo.Map(statuses, func(item entities.OrderStatus, _ int) postgres.Expression {
-		return hydrateDomainToOrdersStatusEnum(item)
-	})
-
 	var result []model.Orders
 
-	err := queries.NewFindStaleOrders(tableStatuses, limit).
+	err := queries.NewFindStaleOrders(statuses, limit).
 		QueryContext(ctxWithTimeout, r.db, &result)
 	if err != nil && !errors.Is(err, qrm.ErrNoRows) {
 		r.logger.Error("error repository FindStaleOrders", zap.Error(err))
@@ -99,7 +94,7 @@ func (r *repository) UpdateStatusAndBonus(
 	defer cancel()
 
 	_, err := queries.
-		NewUpdateStatusAndBonus(orderID, hydrateDomainToOrdersStatus(status), sum).
+		NewUpdateStatusAndBonus(orderID, status, sum).
 		ExecContext(ctxWithTimeout, r.db)
 	if err != nil {
 		r.logger.Error("error repository UpdateStatusAndBonus", zap.Error(err))
@@ -113,7 +108,7 @@ func (r *repository) UpdateStatusAndBonus(
 	return nil
 }
 
-func (r *repository) CountOrdersByUserID(ctx context.Context, userID int32) (int32, *entities.DomainError) {
+func (r *repository) CountOrdersByUserID(ctx context.Context, filter entities.OrderFilter) (int32, *entities.DomainError) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
@@ -121,7 +116,7 @@ func (r *repository) CountOrdersByUserID(ctx context.Context, userID int32) (int
 		Count int32
 	}
 
-	err := queries.NewCountByUserID(userID).
+	err := queries.NewCountByUserID(filter).
 		QueryContext(ctxWithTimeout, r.db, &result)
 	if err != nil {
 		r.logger.Error("error repository FindByOrderID", zap.Error(err))
@@ -134,7 +129,7 @@ func (r *repository) CountOrdersByUserID(ctx context.Context, userID int32) (int
 
 func (r *repository) FindByUserID(
 	ctx context.Context,
-	userID int32,
+	filter entities.OrderFilter,
 	limit int64,
 	offset int64,
 ) ([]entities.Order, *entities.DomainError) {
@@ -143,7 +138,7 @@ func (r *repository) FindByUserID(
 
 	var result []model.Orders
 
-	err := queries.NewFindByUserID(userID, limit, offset).
+	err := queries.NewFindByUserID(filter, limit, offset).
 		QueryContext(ctxWithTimeout, r.db, &result)
 	if err != nil && !errors.Is(err, qrm.ErrNoRows) {
 		r.logger.Error("error repository FindByOrderID", zap.Error(err))
@@ -177,7 +172,7 @@ func (r *repository) CreateOrder(ctx context.Context, orderID string, userID int
 	var result struct {
 		ID int32
 	}
-	err := queries.NewCreateOrder(orderID, userID, hydrateDomainToOrdersStatusEnum(status)).
+	err := queries.NewCreateOrder(orderID, userID, status).
 		QueryContext(ctxWithTimeout, r.db, &result)
 	if err != nil {
 		r.logger.Error("error repository CreateOrder", zap.Error(err))

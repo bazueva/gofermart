@@ -3,18 +3,24 @@ package queries
 import (
 	"time"
 
+	"github.com/bazueva/gofermart/internal/domain/entities"
 	"github.com/bazueva/gofermart/schema.gen/gofermart/public/table"
 	"github.com/go-jet/jet/v2/postgres"
+	"github.com/samber/lo"
 )
 
-func NewFindStaleOrders(statuses []postgres.Expression, limit int64) postgres.SelectStatement {
+func NewFindStaleOrders(statuses []entities.OrderStatus, limit int64) postgres.SelectStatement {
 	staleThreshold := time.Now().Add(-2 * time.Minute)
+
+	statusesArgs := lo.Map(statuses, func(item entities.OrderStatus, index int) postgres.Expression {
+		return hydrateDomainToOrdersStatusEnum(item)
+	})
 
 	return postgres.
 		SELECT(table.Orders.OrderID).
 		FROM(table.Orders).
 		WHERE(
-			table.Orders.Status.IN(statuses...).
+			table.Orders.Status.IN(statusesArgs...).
 				AND(
 					table.Orders.CreatedAt.LT(postgres.TimestampzT(staleThreshold)),
 				),
