@@ -150,10 +150,12 @@ func (op *OrderProcessor) checkOrderBonus(ctx context.Context, orderID string) {
 			op.logger.Info("Заказ не найден в bonus, заказу присвоен статус INVALID", zap.String("order_id", orderID))
 
 			return
-			//result = &entities.Order{
+
+			// Падают тесты на гитлабе
+			// result = &entities.Order{
 			//	Status:  entities.OrdersStatusInvalid,
 			//	OrderID: orderID,
-			//}
+			// }
 		} else {
 			return
 		}

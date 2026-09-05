@@ -84,8 +84,6 @@ func checkGoroutineLeaks(initial int, logger *zap.Logger) {
 			zap.Int("final", final),
 			zap.Int("difference", final-initial),
 		)
-		// Делаем дамп для анализа
-		dumpGoroutines(logger)
 	} else {
 		logger.Info("✅ Все горутины завершились корректно",
 			zap.Int("count", final),
