@@ -1,0 +1,141 @@
+goroutine 17 [running]:
+main.dumpGoroutines(0x3974c5ae5500)
+	/Users/evgeniabazueva/яндекс обучение/gofermart/cmd/gophermart/main.go:187 +0x60
+main.setupSignalHandler.func1()
+	/Users/evgeniabazueva/яндекс обучение/gofermart/cmd/gophermart/main.go:104 +0x64
+created by main.setupSignalHandler in goroutine 1
+	/Users/evgeniabazueva/яндекс обучение/gofermart/cmd/gophermart/main.go:100 +0x16c
+
+goroutine 1 [chan receive, 9 minutes]:
+main.startServer({0x10181a388, 0x3974c598b680}, {{{0x16f8c72f0, 0x9}, 0x11d7}, {0x16f8c7272, 0x57}, {0x16f8c72cd, 0x6}, {0x16f8c72d7, ...}, ...}, ...)
+	/Users/evgeniabazueva/яндекс обучение/gofermart/cmd/gophermart/main.go:222 +0x288
+main.main()
+	/Users/evgeniabazueva/яндекс обучение/gofermart/cmd/gophermart/main.go:66 +0x470
+
+goroutine 8 [select, 9 minutes]:
+database/sql.(*DB).connectionOpener(0x3974c5bc24e0, {0x10181a388, 0x3974c598aeb0})
+	/usr/local/go/src/database/sql/sql.go:1261 +0x9c
+created by database/sql.OpenDB in goroutine 1
+	/usr/local/go/src/database/sql/sql.go:841 +0x2a0
+
+goroutine 33 [IO wait, 9 minutes]:
+internal/poll.runtime_pollWait(0x103ecd200, 0x72)
+	/usr/local/go/src/runtime/netpoll.go:351 +0x48
+internal/poll.(*pollDesc).wait(0x3974c5a640a0, 0x72, 0x0)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:84 +0x84
+internal/poll.(*pollDesc).waitRead(0x3974c5a640a0, 0x0)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:89 +0x38
+internal/poll.(*FD).Accept(0x3974c5a64080)
+	/usr/local/go/src/internal/poll/fd_unix.go:613 +0x364
+net.(*netFD).accept(0x3974c5a64080)
+	/usr/local/go/src/net/fd_unix.go:150 +0x58
+net.(*TCPListener).accept(0x3974c5a30480)
+	/usr/local/go/src/net/tcpsock_posix.go:159 +0x4c
+net.(*TCPListener).Accept(0x3974c5a30480)
+	/usr/local/go/src/net/tcpsock.go:387 +0x58
+net/http.(*Server).Serve(0x3974c5c80000, {0x101818460, 0x3974c5a30480})
+	/usr/local/go/src/net/http/server.go:3434 +0x3a4
+net/http.(*Server).ListenAndServe(0x3974c5c80000)
+	/usr/local/go/src/net/http/server.go:3360 +0x140
+main.runPprofServer.func1()
+	/Users/evgeniabazueva/яндекс обучение/gofermart/cmd/gophermart/main.go:165 +0x12c
+created by main.runPprofServer in goroutine 18
+	/Users/evgeniabazueva/яндекс обучение/gofermart/cmd/gophermart/main.go:161 +0x1d0
+
+goroutine 13 [syscall]:
+os/signal.signal_recv()
+	/usr/local/go/src/runtime/sigqueue.go:149 +0xa4
+os/signal.loop()
+	/usr/local/go/src/os/signal/signal_unix.go:23 +0x24
+created by os/signal.Notify.func1.1 in goroutine 1
+	/usr/local/go/src/os/signal/signal.go:152 +0x34
+
+goroutine 18 [chan receive, 9 minutes]:
+main.runPprofServer({0x10181a388, 0x3974c598b680}, 0x3974c5ae5500)
+	/Users/evgeniabazueva/яндекс обучение/gofermart/cmd/gophermart/main.go:170 +0x1f0
+created by main.main in goroutine 1
+	/Users/evgeniabazueva/яндекс обучение/gofermart/cmd/gophermart/main.go:57 +0x38c
+
+goroutine 19 [chan receive, 6 minutes]:
+github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).orderCheckStatus(0x3974c5a30000, {0x10181a388, 0x3974c598b680})
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:141 +0x48
+github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).Start.func1()
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:113 +0x88
+created by github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).Start in goroutine 1
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:111 +0x144
+
+goroutine 20 [chan receive]:
+github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).orderCheckStatus(0x3974c5a30000, {0x10181a388, 0x3974c598b680})
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:141 +0x48
+github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).Start.func1()
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:113 +0x88
+created by github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).Start in goroutine 1
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:111 +0x144
+
+goroutine 21 [chan receive]:
+github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).orderCheckStatus(0x3974c5a30000, {0x10181a388, 0x3974c598b680})
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:141 +0x48
+github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).Start.func1()
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:113 +0x88
+created by github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).Start in goroutine 1
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:111 +0x144
+
+goroutine 22 [chan receive]:
+github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).orderUpdateBonus(0x3974c5a30000, {0x10181a388, 0x3974c598b680})
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:173 +0x60
+github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).Start.func2()
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:122 +0x88
+created by github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).Start in goroutine 1
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:120 +0x248
+
+goroutine 23 [chan receive, 9 minutes]:
+github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).orderUpdateBonus(0x3974c5a30000, {0x10181a388, 0x3974c598b680})
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:173 +0x60
+github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).Start.func2()
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:122 +0x88
+created by github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).Start in goroutine 1
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:120 +0x248
+
+goroutine 24 [chan receive, 9 minutes]:
+github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).orderUpdateBonus(0x3974c5a30000, {0x10181a388, 0x3974c598b680})
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:173 +0x60
+github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).Start.func2()
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:122 +0x88
+created by github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).Start in goroutine 1
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:120 +0x248
+
+goroutine 25 [chan receive, 9 minutes]:
+github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).Start.func3()
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:127 +0x60
+created by github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).Start in goroutine 1
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:126 +0x360
+
+goroutine 26 [select]:
+github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).StartDatabasePoller.func1()
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:83 +0xac
+created by github.com/bazueva/gofermart/internal/service/order.(*OrderProcessor).StartDatabasePoller in goroutine 1
+	/Users/evgeniabazueva/яндекс обучение/gofermart/internal/service/order/order_processor.go:81 +0x104
+
+goroutine 27 [IO wait, 9 minutes]:
+internal/poll.runtime_pollWait(0x103ecd000, 0x72)
+	/usr/local/go/src/runtime/netpoll.go:351 +0x48
+internal/poll.(*pollDesc).wait(0x3974c5ca40a0, 0x72, 0x0)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:84 +0x84
+internal/poll.(*pollDesc).waitRead(0x3974c5ca40a0, 0x0)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:89 +0x38
+internal/poll.(*FD).Accept(0x3974c5ca4080)
+	/usr/local/go/src/internal/poll/fd_unix.go:613 +0x364
+net.(*netFD).accept(0x3974c5ca4080)
+	/usr/local/go/src/net/fd_unix.go:150 +0x58
+net.(*TCPListener).accept(0x3974c5bc0840)
+	/usr/local/go/src/net/tcpsock_posix.go:159 +0x4c
+net.(*TCPListener).Accept(0x3974c5bc0840)
+	/usr/local/go/src/net/tcpsock.go:387 +0x58
+net/http.(*Server).Serve(0x3974c5a4c100, {0x101818460, 0x3974c5bc0840})
+	/usr/local/go/src/net/http/server.go:3434 +0x3a4
+net/http.(*Server).ListenAndServe(0x3974c5a4c100)
+	/usr/local/go/src/net/http/server.go:3360 +0x140
+main.startServer.func1()
+	/Users/evgeniabazueva/яндекс обучение/gofermart/cmd/gophermart/main.go:217 +0x13c
+created by main.startServer in goroutine 1
+	/Users/evgeniabazueva/яндекс обучение/gofermart/cmd/gophermart/main.go:215 +0x268
