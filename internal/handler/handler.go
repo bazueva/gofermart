@@ -21,6 +21,7 @@ type App interface {
 	UserOrdersList(ctx context.Context, page int32, perPage int32) ([]entities.Order, *entities.DomainError)
 	BalanceWithDraw(ctx context.Context, request models.BalanceWithdrawRequest) *entities.DomainError
 	UserWithdrawals(ctx context.Context, toInt32 int32, toInt33 int32) ([]entities.Order, *entities.DomainError)
+	UserBalance(ctx context.Context) (entities.Balance, *entities.DomainError)
 }
 
 type Handler struct {
@@ -114,6 +115,8 @@ func (h *Handler) errorHandler(writer http.ResponseWriter, err error, statusCode
 			statusCode = http.StatusUnprocessableEntity
 		case entities.OkEntityErrorType:
 			statusCode = http.StatusOK
+		case entities.PaymentRequiredErrorType:
+			statusCode = http.StatusPaymentRequired
 
 		default:
 			statusCode = http.StatusInternalServerError
@@ -273,4 +276,29 @@ func (h *Handler) UserWithdrawals(writer http.ResponseWriter, request *http.Requ
 	}
 
 	writer.Write(resultJSON)
+}
+
+func (h *Handler) UserBalance(writer http.ResponseWriter, request *http.Request) {
+	result, errDomain := h.app.UserBalance(request.Context())
+	if errDomain != nil {
+		h.errorHandler(writer, errDomain, 0)
+
+		return
+	}
+
+	balance := models.Balance{
+		Current:   result.Balance,
+		Withdrawn: result.Withdrawn,
+	}
+
+	jsonBalance, err := json.Marshal(balance)
+	if err != nil {
+		h.logger.Error("error marshal balance", zap.Error(err))
+
+		h.errorHandler(writer, entities.NewInternalServerError(err, ""), 0)
+
+		return
+	}
+
+	writer.Write(jsonBalance)
 }

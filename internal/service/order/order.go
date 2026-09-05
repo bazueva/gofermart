@@ -19,6 +19,7 @@ type Repository interface {
 	UserBalance(ctx context.Context, db interfaces.Tx, id int32) (float64, *entities.DomainError)
 	CreateOrderWithWithdraw(ctx context.Context, db interfaces.Tx, userID int32, orderID string, bonusSum float64) *entities.DomainError
 	BeginTransaction(ctx context.Context) (interfaces.Tx, error)
+	UserBalanceWithWithdrawn(ctx context.Context, id int32) (entities.Balance, *entities.DomainError)
 }
 
 type OrderQueue interface {
@@ -29,6 +30,10 @@ type Order struct {
 	repository Repository
 	logger     interfaces.Logger
 	orderQueue OrderQueue
+}
+
+func (o *Order) UserBalance(ctx context.Context, userID int32) (entities.Balance, *entities.DomainError) {
+	return o.repository.UserBalanceWithWithdrawn(ctx, userID)
 }
 
 func (o *Order) OrdersWithdrawalsListUser(

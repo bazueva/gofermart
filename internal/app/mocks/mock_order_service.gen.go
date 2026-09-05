@@ -320,3 +320,71 @@ func (_c *MockOrderService_OrdersWithdrawalsListUser_Call) RunAndReturn(run func
 	_c.Call.Return(run)
 	return _c
 }
+
+// UserBalance provides a mock function for the type MockOrderService
+func (_mock *MockOrderService) UserBalance(ctx context.Context, id int32) (entities.Balance, *entities.DomainError) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UserBalance")
+	}
+
+	var r0 entities.Balance
+	var r1 *entities.DomainError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int32) (entities.Balance, *entities.DomainError)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int32) entities.Balance); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Get(0).(entities.Balance)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int32) *entities.DomainError); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*entities.DomainError)
+		}
+	}
+	return r0, r1
+}
+
+// MockOrderService_UserBalance_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UserBalance'
+type MockOrderService_UserBalance_Call struct {
+	*mock.Call
+}
+
+// UserBalance is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id int32
+func (_e *MockOrderService_Expecter) UserBalance(ctx any, id any) *MockOrderService_UserBalance_Call {
+	return &MockOrderService_UserBalance_Call{Call: _e.mock.On("UserBalance", ctx, id)}
+}
+
+func (_c *MockOrderService_UserBalance_Call) Run(run func(ctx context.Context, id int32)) *MockOrderService_UserBalance_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 int32
+		if args[1] != nil {
+			arg1 = args[1].(int32)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockOrderService_UserBalance_Call) Return(balance entities.Balance, domainError *entities.DomainError) *MockOrderService_UserBalance_Call {
+	_c.Call.Return(balance, domainError)
+	return _c
+}
+
+func (_c *MockOrderService_UserBalance_Call) RunAndReturn(run func(ctx context.Context, id int32) (entities.Balance, *entities.DomainError)) *MockOrderService_UserBalance_Call {
+	_c.Call.Return(run)
+	return _c
+}

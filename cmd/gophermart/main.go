@@ -84,6 +84,8 @@ func checkGoroutineLeaks(initial int, logger *zap.Logger) {
 			zap.Int("final", final),
 			zap.Int("difference", final-initial),
 		)
+
+		dumpGoroutines(logger)
 	} else {
 		logger.Info("✅ Все горутины завершились корректно",
 			zap.Int("count", final),
@@ -98,8 +100,6 @@ func setupSignalHandler(ctx context.Context, cancel context.CancelFunc, logger *
 	go func() {
 		<-sigCh
 		logger.Info("Получен Ctrl+C, останавливаемся...")
-		// Делаем дамп горутин перед завершением
-		dumpGoroutines(logger)
 
 		cancel()
 	}()
@@ -244,6 +244,7 @@ func setupRouter(components *AppComponents, logger *zap.Logger) *chi.Mux {
 		r.Get("/api/user/orders", components.Handler.UserOrdersList)
 		r.Post("/api/user/balance/withdraw", components.Handler.BalanceWithdraw)
 		r.Get("/api/user/withdrawals", components.Handler.UserWithdrawals)
+		r.Get("/api/user/balance", components.Handler.UserBalance)
 	})
 
 	return router

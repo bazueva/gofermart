@@ -34,5 +34,10 @@ func NormalizeSQL(sql string) string {
 	reSpaces := regexp.MustCompile(`\s+`)
 	sql = reSpaces.ReplaceAllString(sql, " ")
 
+	sql = strings.ReplaceAll(sql, "( ", "(")
+	sql = strings.ReplaceAll(sql, " )", ")")
+	sql = strings.ReplaceAll(sql, " ,", ",")
+	sql = strings.ReplaceAll(sql, ", ", ",")
+
 	return strings.TrimSpace(sql)
 }
