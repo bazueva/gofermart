@@ -115,16 +115,16 @@ func (_c *MockOrderRepository_FindStaleOrders_Call) RunAndReturn(run func(ctx co
 }
 
 // UpdateStatusAndBonus provides a mock function for the type MockOrderRepository
-func (_mock *MockOrderRepository) UpdateStatusAndBonus(ctx context.Context, orderID string, status entities.OrderStatus, sum float64) *entities.DomainError {
-	ret := _mock.Called(ctx, orderID, status, sum)
+func (_mock *MockOrderRepository) UpdateStatusAndBonus(ctx context.Context, order entities.Order) *entities.DomainError {
+	ret := _mock.Called(ctx, order)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateStatusAndBonus")
 	}
 
 	var r0 *entities.DomainError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, entities.OrderStatus, float64) *entities.DomainError); ok {
-		r0 = returnFunc(ctx, orderID, status, sum)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entities.Order) *entities.DomainError); ok {
+		r0 = returnFunc(ctx, order)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entities.DomainError)
@@ -140,36 +140,24 @@ type MockOrderRepository_UpdateStatusAndBonus_Call struct {
 
 // UpdateStatusAndBonus is a helper method to define mock.On call
 //   - ctx context.Context
-//   - orderID string
-//   - status entities.OrderStatus
-//   - sum float64
-func (_e *MockOrderRepository_Expecter) UpdateStatusAndBonus(ctx any, orderID any, status any, sum any) *MockOrderRepository_UpdateStatusAndBonus_Call {
-	return &MockOrderRepository_UpdateStatusAndBonus_Call{Call: _e.mock.On("UpdateStatusAndBonus", ctx, orderID, status, sum)}
+//   - order entities.Order
+func (_e *MockOrderRepository_Expecter) UpdateStatusAndBonus(ctx any, order any) *MockOrderRepository_UpdateStatusAndBonus_Call {
+	return &MockOrderRepository_UpdateStatusAndBonus_Call{Call: _e.mock.On("UpdateStatusAndBonus", ctx, order)}
 }
 
-func (_c *MockOrderRepository_UpdateStatusAndBonus_Call) Run(run func(ctx context.Context, orderID string, status entities.OrderStatus, sum float64)) *MockOrderRepository_UpdateStatusAndBonus_Call {
+func (_c *MockOrderRepository_UpdateStatusAndBonus_Call) Run(run func(ctx context.Context, order entities.Order)) *MockOrderRepository_UpdateStatusAndBonus_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 entities.Order
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 entities.OrderStatus
-		if args[2] != nil {
-			arg2 = args[2].(entities.OrderStatus)
-		}
-		var arg3 float64
-		if args[3] != nil {
-			arg3 = args[3].(float64)
+			arg1 = args[1].(entities.Order)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
 		)
 	})
 	return _c
@@ -180,7 +168,7 @@ func (_c *MockOrderRepository_UpdateStatusAndBonus_Call) Return(domainError *ent
 	return _c
 }
 
-func (_c *MockOrderRepository_UpdateStatusAndBonus_Call) RunAndReturn(run func(ctx context.Context, orderID string, status entities.OrderStatus, sum float64) *entities.DomainError) *MockOrderRepository_UpdateStatusAndBonus_Call {
+func (_c *MockOrderRepository_UpdateStatusAndBonus_Call) RunAndReturn(run func(ctx context.Context, order entities.Order) *entities.DomainError) *MockOrderRepository_UpdateStatusAndBonus_Call {
 	_c.Call.Return(run)
 	return _c
 }

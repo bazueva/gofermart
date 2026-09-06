@@ -118,15 +118,13 @@ func (r *repository) FindStaleOrders(ctx context.Context, statuses []entities.Or
 
 func (r *repository) UpdateStatusAndBonus(
 	ctx context.Context,
-	orderID string,
-	status entities.OrderStatus,
-	sum float64,
+	order entities.Order,
 ) *entities.DomainError {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
 	_, err := queries.
-		NewUpdateStatusAndBonus(orderID, status, sum).
+		NewUpdateStatusAndBonus(order.OrderID, order.Status, order.BonusSum, order.NextCheckAt).
 		ExecContext(ctxWithTimeout, r.executor(ctxWithTimeout))
 	if err != nil {
 		r.logger.Error("error repository UpdateStatusAndBonus", zap.Error(err))

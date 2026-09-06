@@ -23,7 +23,14 @@ func NewFindStaleOrders(statuses []entities.OrderStatus, limit int64) postgres.S
 			table.Orders.Status.IN(statusesArgs...).
 				AND(
 					table.Orders.CreatedAt.LT(postgres.TimestampzT(staleThreshold)),
-				),
+				).AND(
+				table.Orders.NextCheckAt.IS_NULL().
+					OR(
+						table.Orders.NextCheckAt.LT(
+							postgres.TimestampzT(time.Now()),
+						),
+					),
+			),
 		).
 		ORDER_BY(table.Orders.CreatedAt.ASC()).
 		LIMIT(limit)

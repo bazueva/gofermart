@@ -19,6 +19,7 @@ type Order struct {
 	BonusSum    float64
 	CreatedAt   *time.Time
 	ProcessedAt *time.Time
+	NextCheckAt *time.Time
 }
 
 type BalanceWithdraw struct {
