@@ -44,8 +44,7 @@ func Authorization(checkerToken CheckerJWTToken, logger interfaces.Logger) func(
 				return
 			}
 
-			auth := context.NewAuth(r.Context()).
-				WithUserID(userID)
+			auth := context.WithUserID(r.Context(), userID)
 
 			next.ServeHTTP(w, r.WithContext(auth))
 		}

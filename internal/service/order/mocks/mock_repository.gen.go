@@ -241,16 +241,16 @@ func (_c *MockRepository_CreateOrder_Call) RunAndReturn(run func(ctx context.Con
 }
 
 // CreateOrderWithWithdraw provides a mock function for the type MockRepository
-func (_mock *MockRepository) CreateOrderWithWithdraw(ctx context.Context, db interfaces.Tx, userID int32, orderID string, bonusSum float64) *entities.DomainError {
-	ret := _mock.Called(ctx, db, userID, orderID, bonusSum)
+func (_mock *MockRepository) CreateOrderWithWithdraw(ctx context.Context, userID int32, orderID string, bonusSum float64) *entities.DomainError {
+	ret := _mock.Called(ctx, userID, orderID, bonusSum)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateOrderWithWithdraw")
 	}
 
 	var r0 *entities.DomainError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, interfaces.Tx, int32, string, float64) *entities.DomainError); ok {
-		r0 = returnFunc(ctx, db, userID, orderID, bonusSum)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int32, string, float64) *entities.DomainError); ok {
+		r0 = returnFunc(ctx, userID, orderID, bonusSum)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entities.DomainError)
@@ -266,42 +266,36 @@ type MockRepository_CreateOrderWithWithdraw_Call struct {
 
 // CreateOrderWithWithdraw is a helper method to define mock.On call
 //   - ctx context.Context
-//   - db interfaces.Tx
 //   - userID int32
 //   - orderID string
 //   - bonusSum float64
-func (_e *MockRepository_Expecter) CreateOrderWithWithdraw(ctx any, db any, userID any, orderID any, bonusSum any) *MockRepository_CreateOrderWithWithdraw_Call {
-	return &MockRepository_CreateOrderWithWithdraw_Call{Call: _e.mock.On("CreateOrderWithWithdraw", ctx, db, userID, orderID, bonusSum)}
+func (_e *MockRepository_Expecter) CreateOrderWithWithdraw(ctx any, userID any, orderID any, bonusSum any) *MockRepository_CreateOrderWithWithdraw_Call {
+	return &MockRepository_CreateOrderWithWithdraw_Call{Call: _e.mock.On("CreateOrderWithWithdraw", ctx, userID, orderID, bonusSum)}
 }
 
-func (_c *MockRepository_CreateOrderWithWithdraw_Call) Run(run func(ctx context.Context, db interfaces.Tx, userID int32, orderID string, bonusSum float64)) *MockRepository_CreateOrderWithWithdraw_Call {
+func (_c *MockRepository_CreateOrderWithWithdraw_Call) Run(run func(ctx context.Context, userID int32, orderID string, bonusSum float64)) *MockRepository_CreateOrderWithWithdraw_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 interfaces.Tx
+		var arg1 int32
 		if args[1] != nil {
-			arg1 = args[1].(interfaces.Tx)
+			arg1 = args[1].(int32)
 		}
-		var arg2 int32
+		var arg2 string
 		if args[2] != nil {
-			arg2 = args[2].(int32)
+			arg2 = args[2].(string)
 		}
-		var arg3 string
+		var arg3 float64
 		if args[3] != nil {
-			arg3 = args[3].(string)
-		}
-		var arg4 float64
-		if args[4] != nil {
-			arg4 = args[4].(float64)
+			arg3 = args[3].(float64)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
-			arg4,
 		)
 	})
 	return _c
@@ -312,7 +306,7 @@ func (_c *MockRepository_CreateOrderWithWithdraw_Call) Return(domainError *entit
 	return _c
 }
 
-func (_c *MockRepository_CreateOrderWithWithdraw_Call) RunAndReturn(run func(ctx context.Context, db interfaces.Tx, userID int32, orderID string, bonusSum float64) *entities.DomainError) *MockRepository_CreateOrderWithWithdraw_Call {
+func (_c *MockRepository_CreateOrderWithWithdraw_Call) RunAndReturn(run func(ctx context.Context, userID int32, orderID string, bonusSum float64) *entities.DomainError) *MockRepository_CreateOrderWithWithdraw_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -470,8 +464,8 @@ func (_c *MockRepository_FindByUserID_Call) RunAndReturn(run func(ctx context.Co
 }
 
 // UserBalance provides a mock function for the type MockRepository
-func (_mock *MockRepository) UserBalance(ctx context.Context, db interfaces.Tx, id int32) (float64, *entities.DomainError) {
-	ret := _mock.Called(ctx, db, id)
+func (_mock *MockRepository) UserBalance(ctx context.Context, id int32) (float64, *entities.DomainError) {
+	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UserBalance")
@@ -479,16 +473,16 @@ func (_mock *MockRepository) UserBalance(ctx context.Context, db interfaces.Tx, 
 
 	var r0 float64
 	var r1 *entities.DomainError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, interfaces.Tx, int32) (float64, *entities.DomainError)); ok {
-		return returnFunc(ctx, db, id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int32) (float64, *entities.DomainError)); ok {
+		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, interfaces.Tx, int32) float64); ok {
-		r0 = returnFunc(ctx, db, id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int32) float64); ok {
+		r0 = returnFunc(ctx, id)
 	} else {
 		r0 = ret.Get(0).(float64)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, interfaces.Tx, int32) *entities.DomainError); ok {
-		r1 = returnFunc(ctx, db, id)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int32) *entities.DomainError); ok {
+		r1 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*entities.DomainError)
@@ -504,30 +498,24 @@ type MockRepository_UserBalance_Call struct {
 
 // UserBalance is a helper method to define mock.On call
 //   - ctx context.Context
-//   - db interfaces.Tx
 //   - id int32
-func (_e *MockRepository_Expecter) UserBalance(ctx any, db any, id any) *MockRepository_UserBalance_Call {
-	return &MockRepository_UserBalance_Call{Call: _e.mock.On("UserBalance", ctx, db, id)}
+func (_e *MockRepository_Expecter) UserBalance(ctx any, id any) *MockRepository_UserBalance_Call {
+	return &MockRepository_UserBalance_Call{Call: _e.mock.On("UserBalance", ctx, id)}
 }
 
-func (_c *MockRepository_UserBalance_Call) Run(run func(ctx context.Context, db interfaces.Tx, id int32)) *MockRepository_UserBalance_Call {
+func (_c *MockRepository_UserBalance_Call) Run(run func(ctx context.Context, id int32)) *MockRepository_UserBalance_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 interfaces.Tx
+		var arg1 int32
 		if args[1] != nil {
-			arg1 = args[1].(interfaces.Tx)
-		}
-		var arg2 int32
-		if args[2] != nil {
-			arg2 = args[2].(int32)
+			arg1 = args[1].(int32)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -538,7 +526,7 @@ func (_c *MockRepository_UserBalance_Call) Return(f float64, domainError *entiti
 	return _c
 }
 
-func (_c *MockRepository_UserBalance_Call) RunAndReturn(run func(ctx context.Context, db interfaces.Tx, id int32) (float64, *entities.DomainError)) *MockRepository_UserBalance_Call {
+func (_c *MockRepository_UserBalance_Call) RunAndReturn(run func(ctx context.Context, id int32) (float64, *entities.DomainError)) *MockRepository_UserBalance_Call {
 	_c.Call.Return(run)
 	return _c
 }

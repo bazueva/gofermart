@@ -2,35 +2,14 @@ package context
 
 import "context"
 
-type ctxKey string
+type userIDContextKey struct{}
 
-const (
-	userIDKey ctxKey = "userID"
-)
-
-type Auth struct {
-	context.Context
+func WithUserID(ctx context.Context, userID int32) context.Context {
+	return context.WithValue(ctx, userIDContextKey{}, userID)
 }
 
-func NewAuth(ctx context.Context) *Auth {
-	if ctx == nil {
-		ctx = context.Background()
-	}
+func UserIDFromContext(ctx context.Context) (int32, bool) {
+	userID, ok := ctx.Value(userIDContextKey{}).(int32)
 
-	return &Auth{Context: ctx}
-}
-
-func (a *Auth) WithUserID(userID int32) *Auth {
-	return &Auth{
-		Context: context.WithValue(a.Context, userIDKey, userID),
-	}
-}
-
-func (a *Auth) UserID() int32 {
-	userID, ok := a.Context.Value(userIDKey).(int32)
-	if !ok {
-		return 0
-	}
-
-	return userID
+	return userID, ok
 }

@@ -26,8 +26,7 @@ func TestAuthorization(t *testing.T) {
 			Return(expectedUserID, nil).Once()
 
 		handler := Authorization(mockChecker, mockLogger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			auth := appCtx.NewAuth(r.Context())
-			userID := auth.UserID()
+			userID, _ := appCtx.UserIDFromContext(r.Context())
 
 			assert.Equal(t, expectedUserID, userID)
 			w.WriteHeader(http.StatusOK)
@@ -167,8 +166,7 @@ func TestAuthorization(t *testing.T) {
 			Once()
 
 		handler := Authorization(mockChecker, mockLogger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			auth := appCtx.NewAuth(r.Context())
-			userID := auth.UserID()
+			userID, _ := appCtx.UserIDFromContext(r.Context())
 
 			assert.Equal(t, expectedUserID, userID)
 			w.WriteHeader(http.StatusOK)

@@ -578,3 +578,158 @@ func TestUserService_CheckJWTToken(t *testing.T) {
 		assert.Nil(t, errDomain)
 	})
 }
+
+func TestUserService_Register(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success register", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+
+		mockRepo.EXPECT().
+			ExistLogin(mock.Anything, "testuser").
+			Return(false, nil)
+
+		mockRepo.EXPECT().
+			CreateUser(mock.Anything, mock.MatchedBy(func(user entities.User) bool {
+				return user.Login == "testuser" &&
+					user.PasswordHash != ""
+			})).
+			Return(int32(19), nil)
+
+		logger := interfacesMocks.NewMockLogger(t)
+
+		service := NewUserService(mockRepo, logger, "test-secret")
+
+		userForm := forms.UserForm{
+			Login:    "testuser",
+			Password: "validpassword123",
+		}
+
+		token, err := service.Register(t.Context(), userForm)
+
+		assert.NotEmpty(t, token)
+		assert.Nil(t, err)
+
+		userID, errDomain := service.CheckJWTToken(token)
+
+		assert.Nil(t, errDomain)
+		assert.Equal(t, int32(19), userID)
+	})
+
+	t.Run("validation error", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+		logger := interfacesMocks.NewMockLogger(t)
+
+		service := NewUserService(mockRepo, logger, "test-secret")
+
+		userForm := forms.UserForm{
+			Login:    "",
+			Password: "validpassword123",
+		}
+
+		token, err := service.Register(t.Context(), userForm)
+
+		assert.Empty(t, token)
+		require.NotNil(t, err)
+		assert.Equal(t, entities.BadRequestErrorType, err.ErrorType)
+	})
+
+	t.Run("error - login already exists", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+
+		mockRepo.EXPECT().
+			ExistLogin(mock.Anything, "existinguser").
+			Return(true, nil)
+
+		logger := interfacesMocks.NewMockLogger(t)
+
+		service := NewUserService(mockRepo, logger, "test-secret")
+
+		userForm := forms.UserForm{
+			Login:    "existinguser",
+			Password: "validpassword123",
+		}
+
+		token, err := service.Register(t.Context(), userForm)
+
+		assert.Empty(t, token)
+		assert.Equal(t, &entities.DomainError{
+			ErrorType: entities.ConflictErrorType,
+			Text:      "Такой login уже существует",
+		}, err)
+	})
+
+	t.Run("error - repository check unique login", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+
+		expectedErr := entities.NewInternalServerError(
+			errors.New("repository error"),
+			"",
+		)
+
+		mockRepo.EXPECT().
+			ExistLogin(mock.Anything, "testuser").
+			Return(false, expectedErr)
+
+		logger := interfacesMocks.NewMockLogger(t)
+
+		service := NewUserService(mockRepo, logger, "test-secret")
+
+		userForm := forms.UserForm{
+			Login:    "testuser",
+			Password: "validpassword123",
+		}
+
+		token, err := service.Register(t.Context(), userForm)
+
+		assert.Empty(t, token)
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("error - create user", func(t *testing.T) {
+		t.Parallel()
+
+		mockRepo := mocks.NewMockRepository(t)
+
+		expectedErr := entities.NewConflictError(
+			nil,
+			"login already exists",
+		)
+
+		mockRepo.EXPECT().
+			ExistLogin(mock.Anything, "testuser").
+			Return(false, nil)
+
+		mockRepo.EXPECT().
+			CreateUser(
+				mock.Anything,
+				mock.MatchedBy(func(user entities.User) bool {
+					return user.Login == "testuser" &&
+						user.PasswordHash != ""
+				}),
+			).
+			Return(int32(0), expectedErr)
+
+		logger := interfacesMocks.NewMockLogger(t)
+
+		service := NewUserService(mockRepo, logger, "test-secret")
+
+		userForm := forms.UserForm{
+			Login:    "testuser",
+			Password: "validpassword123",
+		}
+
+		token, err := service.Register(t.Context(), userForm)
+
+		assert.Empty(t, token)
+		assert.Equal(t, expectedErr, err)
+	})
+}

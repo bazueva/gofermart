@@ -83,7 +83,7 @@ func (_c *MockTx_Commit_Call) RunAndReturn(run func() error) *MockTx_Commit_Call
 }
 
 // ExecContext provides a mock function for the type MockTx
-func (_mock *MockTx) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (_mock *MockTx) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	var tmpRet mock.Arguments
 	if len(args) > 0 {
 		tmpRet = _mock.Called(ctx, query, args)
@@ -98,17 +98,17 @@ func (_mock *MockTx) ExecContext(ctx context.Context, query string, args ...inte
 
 	var r0 sql.Result
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, ...interface{}) (sql.Result, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, ...any) (sql.Result, error)); ok {
 		return returnFunc(ctx, query, args...)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, ...interface{}) sql.Result); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, ...any) sql.Result); ok {
 		r0 = returnFunc(ctx, query, args...)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(sql.Result)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, ...interface{}) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, ...any) error); ok {
 		r1 = returnFunc(ctx, query, args...)
 	} else {
 		r1 = ret.Error(1)
@@ -124,13 +124,13 @@ type MockTx_ExecContext_Call struct {
 // ExecContext is a helper method to define mock.On call
 //   - ctx context.Context
 //   - query string
-//   - args ...interface{}
+//   - args ...any
 func (_e *MockTx_Expecter) ExecContext(ctx any, query any, args ...any) *MockTx_ExecContext_Call {
 	return &MockTx_ExecContext_Call{Call: _e.mock.On("ExecContext",
 		append([]any{ctx, query}, args...)...)}
 }
 
-func (_c *MockTx_ExecContext_Call) Run(run func(ctx context.Context, query string, args ...interface{})) *MockTx_ExecContext_Call {
+func (_c *MockTx_ExecContext_Call) Run(run func(ctx context.Context, query string, args ...any)) *MockTx_ExecContext_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -140,10 +140,10 @@ func (_c *MockTx_ExecContext_Call) Run(run func(ctx context.Context, query strin
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 []interface{}
-		var variadicArgs []interface{}
+		var arg2 []any
+		var variadicArgs []any
 		if len(args) > 2 {
-			variadicArgs = args[2].([]interface{})
+			variadicArgs = args[2].([]any)
 		}
 		arg2 = variadicArgs
 		run(
@@ -160,13 +160,13 @@ func (_c *MockTx_ExecContext_Call) Return(result sql.Result, err error) *MockTx_
 	return _c
 }
 
-func (_c *MockTx_ExecContext_Call) RunAndReturn(run func(ctx context.Context, query string, args ...interface{}) (sql.Result, error)) *MockTx_ExecContext_Call {
+func (_c *MockTx_ExecContext_Call) RunAndReturn(run func(ctx context.Context, query string, args ...any) (sql.Result, error)) *MockTx_ExecContext_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // QueryContext provides a mock function for the type MockTx
-func (_mock *MockTx) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+func (_mock *MockTx) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
 	var tmpRet mock.Arguments
 	if len(args) > 0 {
 		tmpRet = _mock.Called(ctx, query, args)
@@ -181,17 +181,17 @@ func (_mock *MockTx) QueryContext(ctx context.Context, query string, args ...int
 
 	var r0 *sql.Rows
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, ...interface{}) (*sql.Rows, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, ...any) (*sql.Rows, error)); ok {
 		return returnFunc(ctx, query, args...)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, ...interface{}) *sql.Rows); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, ...any) *sql.Rows); ok {
 		r0 = returnFunc(ctx, query, args...)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*sql.Rows)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, ...interface{}) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, ...any) error); ok {
 		r1 = returnFunc(ctx, query, args...)
 	} else {
 		r1 = ret.Error(1)
@@ -207,13 +207,13 @@ type MockTx_QueryContext_Call struct {
 // QueryContext is a helper method to define mock.On call
 //   - ctx context.Context
 //   - query string
-//   - args ...interface{}
+//   - args ...any
 func (_e *MockTx_Expecter) QueryContext(ctx any, query any, args ...any) *MockTx_QueryContext_Call {
 	return &MockTx_QueryContext_Call{Call: _e.mock.On("QueryContext",
 		append([]any{ctx, query}, args...)...)}
 }
 
-func (_c *MockTx_QueryContext_Call) Run(run func(ctx context.Context, query string, args ...interface{})) *MockTx_QueryContext_Call {
+func (_c *MockTx_QueryContext_Call) Run(run func(ctx context.Context, query string, args ...any)) *MockTx_QueryContext_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -223,10 +223,10 @@ func (_c *MockTx_QueryContext_Call) Run(run func(ctx context.Context, query stri
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 []interface{}
-		var variadicArgs []interface{}
+		var arg2 []any
+		var variadicArgs []any
 		if len(args) > 2 {
-			variadicArgs = args[2].([]interface{})
+			variadicArgs = args[2].([]any)
 		}
 		arg2 = variadicArgs
 		run(
@@ -243,7 +243,7 @@ func (_c *MockTx_QueryContext_Call) Return(rows *sql.Rows, err error) *MockTx_Qu
 	return _c
 }
 
-func (_c *MockTx_QueryContext_Call) RunAndReturn(run func(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)) *MockTx_QueryContext_Call {
+func (_c *MockTx_QueryContext_Call) RunAndReturn(run func(ctx context.Context, query string, args ...any) (*sql.Rows, error)) *MockTx_QueryContext_Call {
 	_c.Call.Return(run)
 	return _c
 }
