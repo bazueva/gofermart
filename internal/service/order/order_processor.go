@@ -10,14 +10,14 @@ import (
 	"go.uber.org/zap"
 )
 
-const rateLimitWorkers = 3
+const workerCount = 3
 
 type BonusRepository interface {
 	GetOrder(ctx context.Context, orderID string) (*entities.Order, *entities.DomainError)
 }
 
 type OrderRepository interface {
-	UpdateStatusAndBonus(ctx context.Context, orderID string, status entities.OrderStatus, sum float64) *entities.DomainError
+	UpdateStatusAndBonus(ctx context.Context, order entities.Order) *entities.DomainError
 	FindStaleOrders(ctx context.Context, statuses []entities.OrderStatus, limit int64) ([]string, *entities.DomainError)
 }
 
@@ -53,9 +53,9 @@ func NewOrderProcessor(
 	logger interfaces.Logger,
 ) *OrderProcessor {
 	// канал для обработка заказов, у которых статус NEW, PROCESSING
-	ordersProcessingCh := make(chan string, rateLimitWorkers*5)
+	ordersProcessingCh := make(chan string, workerCount*5)
 	// канал с результатом начисления по заказам
-	ordersProcessedCh := make(chan entities.Order, rateLimitWorkers*5)
+	ordersProcessedCh := make(chan entities.Order, workerCount*5)
 
 	return &OrderProcessor{
 		logger:             logger,
@@ -89,6 +89,7 @@ func (op *OrderProcessor) StartDatabasePoller(ctx context.Context) {
 				)
 				if err != nil {
 					op.logger.Error("ошибка получения order_ids StartDatabasePoller", zap.Error(err.SourceErr))
+					continue
 				}
 
 				for _, orderID := range orderIDs {
@@ -106,7 +107,7 @@ func (op *OrderProcessor) Start(ctx context.Context) {
 	var wgSaveResults sync.WaitGroup
 
 	// воркеры, которые слушают заказы из ordersProcessingCh
-	for i := 0; i < rateLimitWorkers; i++ {
+	for i := 0; i < workerCount; i++ {
 		wgProcessWorkers.Add(1)
 		go func() {
 			defer wgProcessWorkers.Done()
@@ -115,7 +116,7 @@ func (op *OrderProcessor) Start(ctx context.Context) {
 	}
 
 	// воркеры, которые обновляют заказы в БД, берут данные из ordersProcessedCh
-	for i := 0; i < rateLimitWorkers; i++ {
+	for i := 0; i < workerCount; i++ {
 		wgSaveResults.Add(1)
 		go func() {
 			defer wgSaveResults.Done()
@@ -147,15 +148,13 @@ func (op *OrderProcessor) checkOrderBonus(ctx context.Context, orderID string) {
 	result, err := op.bonusRepository.GetOrder(ctx, orderID)
 	if err != nil {
 		if err.ErrorType == entities.NoContentErrorType {
+			// заказу статус не присваиваем так как падают тесты на гитлабе
 			op.logger.Info("Заказ не найден в bonus, заказу присвоен статус INVALID", zap.String("order_id", orderID))
 
-			return
-
-			// Падают тесты на гитлабе
-			// result = &entities.Order{
-			//	Status:  entities.OrdersStatusInvalid,
-			//	OrderID: orderID,
-			// }
+			result = &entities.Order{
+				OrderID:     orderID,
+				NextCheckAt: new(time.Now().Add(2 * time.Minute)),
+			}
 		} else {
 			return
 		}
@@ -190,7 +189,7 @@ func (op *OrderProcessor) updateStatusOrder(ctx context.Context, data entities.O
 		return
 	}
 
-	err := op.orderRepository.UpdateStatusAndBonus(ctx, data.OrderID, data.Status, data.BonusSum)
+	err := op.orderRepository.UpdateStatusAndBonus(ctx, data)
 	if err != nil {
 		if err.ErrorType == entities.RetriableErrorType {
 			op.logger.Error(

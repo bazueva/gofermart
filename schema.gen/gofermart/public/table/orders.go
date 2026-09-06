@@ -25,6 +25,7 @@ type ordersTable struct {
 	CreatedAt   postgres.ColumnTimestampz
 	ProcessedAt postgres.ColumnTimestampz
 	UpdatedAt   postgres.ColumnTimestampz
+	NextCheckAt postgres.ColumnTimestampz
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -74,8 +75,9 @@ func newOrdersTableImpl(schemaName, tableName, alias string) ordersTable {
 		CreatedAtColumn   = postgres.TimestampzColumn("created_at")
 		ProcessedAtColumn = postgres.TimestampzColumn("processed_at")
 		UpdatedAtColumn   = postgres.TimestampzColumn("updated_at")
-		allColumns        = postgres.ColumnList{IDColumn, OrderIDColumn, StatusColumn, UserIDColumn, BonusSumColumn, CreatedAtColumn, ProcessedAtColumn, UpdatedAtColumn}
-		mutableColumns    = postgres.ColumnList{OrderIDColumn, StatusColumn, UserIDColumn, BonusSumColumn, CreatedAtColumn, ProcessedAtColumn, UpdatedAtColumn}
+		NextCheckAtColumn = postgres.TimestampzColumn("next_check_at")
+		allColumns        = postgres.ColumnList{IDColumn, OrderIDColumn, StatusColumn, UserIDColumn, BonusSumColumn, CreatedAtColumn, ProcessedAtColumn, UpdatedAtColumn, NextCheckAtColumn}
+		mutableColumns    = postgres.ColumnList{OrderIDColumn, StatusColumn, UserIDColumn, BonusSumColumn, CreatedAtColumn, ProcessedAtColumn, UpdatedAtColumn, NextCheckAtColumn}
 		defaultColumns    = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn}
 	)
 
@@ -91,6 +93,7 @@ func newOrdersTableImpl(schemaName, tableName, alias string) ordersTable {
 		CreatedAt:   CreatedAtColumn,
 		ProcessedAt: ProcessedAtColumn,
 		UpdatedAt:   UpdatedAtColumn,
+		NextCheckAt: NextCheckAtColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

@@ -501,16 +501,17 @@ func TestRepository_FindStaleOrders(t *testing.T) {
 
 		expectedSQL := `SELECT orders.order_id AS "orders.order_id"
         FROM public.orders
-        WHERE (orders.status IN ('NEW', 'PROCESSING')) AND (orders.created_at < $1::timestamp with time zone)
+        WHERE ((orders.status IN ('NEW', 'PROCESSING')) AND (orders.created_at < $1::timestamp with time zone)) 
+          AND ((orders.next_check_at IS NULL) OR (orders.next_check_at < $2::timestamp with time zone))
         ORDER BY orders.created_at ASC
-        LIMIT $2;`
+        LIMIT $3;`
 
 		rows := sqlmock.NewRows([]string{"orders.order_id"}).
 			AddRow("12345678903").
 			AddRow("123456789015")
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(sqlmock.AnyArg(), limit).
+			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), limit).
 			WillReturnRows(rows)
 
 		result, err := repo.FindStaleOrders(ctx, statuses, limit)
@@ -534,12 +535,13 @@ func TestRepository_FindStaleOrders(t *testing.T) {
 
 		expectedSQL := `SELECT orders.order_id AS "orders.order_id"
         FROM public.orders
-        WHERE (orders.status IN ('NEW', 'PROCESSING')) AND (orders.created_at < $1::timestamp with time zone)
+        WHERE ((orders.status IN ('NEW', 'PROCESSING')) AND (orders.created_at < $1::timestamp with time zone)) 
+          AND ((orders.next_check_at IS NULL) OR (orders.next_check_at < $2::timestamp with time zone))
         ORDER BY orders.created_at ASC
-        LIMIT $2;`
+        LIMIT $3;`
 
 		mock.ExpectQuery(expectedSQL).
-			WithArgs(sqlmock.AnyArg(), limit).
+			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), limit).
 			WillReturnError(qrm.ErrNoRows)
 
 		result, err := repo.FindStaleOrders(ctx, statuses, limit)
@@ -566,9 +568,10 @@ func TestRepository_FindStaleOrders(t *testing.T) {
 
 		expectedSQL := `SELECT orders.order_id AS "orders.order_id"
         FROM public.orders
-        WHERE (orders.status IN ('NEW', 'PROCESSING')) AND (orders.created_at < $1::timestamp with time zone)
+        WHERE ((orders.status IN ('NEW', 'PROCESSING')) AND (orders.created_at < $1::timestamp with time zone)) 
+          AND ((orders.next_check_at IS NULL) OR (orders.next_check_at < $2::timestamp with time zone))
         ORDER BY orders.created_at ASC
-        LIMIT $2;`
+        LIMIT $3;`
 
 		mock.ExpectQuery(expectedSQL).
 			WithArgs(sqlmock.AnyArg(), limit).
@@ -620,19 +623,21 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 		repo, mock, _ := newTestRepository(t)
 		ctx := t.Context()
 
-		orderID := "12345678903"
-		status := entities.OrdersStatusProcessed
-		sum := float64(100)
+		order := entities.Order{
+			OrderID:  "12345678903",
+			Status:   entities.OrdersStatusProcessing,
+			BonusSum: float64(100),
+		}
 
 		expectedSQL := `UPDATE public.orders
-        SET (status, bonus_sum, updated_at, processed_at) = ($1, $2, $3, $4)
+        SET (bonus_sum, updated_at, next_check_at, status) = ($1, $2, $3, $4)
         WHERE orders.order_id = $5::text;`
 
 		mock.ExpectExec(expectedSQL).
-			WithArgs(model.OrdersStatus_Processed, sum, sqlmock.AnyArg(), sqlmock.AnyArg(), orderID).
+			WithArgs(order.BonusSum, sqlmock.AnyArg(), sqlmock.AnyArg(), model.OrdersStatus_Processing, order.OrderID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 
-		err := repo.UpdateStatusAndBonus(ctx, orderID, status, sum)
+		err := repo.UpdateStatusAndBonus(ctx, order)
 
 		assert.Nil(t, err)
 	})
@@ -641,19 +646,21 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 		repo, mock, _ := newTestRepository(t)
 		ctx := t.Context()
 
-		orderID := "12345678903"
-		status := entities.OrdersStatusInvalid
-		sum := float64(100)
+		order := entities.Order{
+			OrderID:  "12345678903",
+			Status:   entities.OrdersStatusInvalid,
+			BonusSum: float64(100),
+		}
 
 		expectedSQL := `UPDATE public.orders
-        SET (status, bonus_sum, updated_at) = ($1, $2, $3)
-        WHERE orders.order_id = $4::text;`
+        SET (bonus_sum, updated_at, next_check_at, status) = ($1, $2, $3, $4)
+        WHERE orders.order_id = $5::text;`
 
 		mock.ExpectExec(expectedSQL).
-			WithArgs(model.OrdersStatus_Invalid, sum, sqlmock.AnyArg(), orderID).
+			WithArgs(order.BonusSum, sqlmock.AnyArg(), sqlmock.AnyArg(), model.OrdersStatus_Invalid, order.OrderID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 
-		err := repo.UpdateStatusAndBonus(ctx, orderID, status, sum)
+		err := repo.UpdateStatusAndBonus(ctx, order)
 
 		assert.Nil(t, err)
 	})
@@ -668,19 +675,21 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 
 		ctx := t.Context()
 
-		orderID := "12345678903"
-		status := entities.OrdersStatusProcessed
-		sum := float64(100)
+		order := entities.Order{
+			OrderID:  "12345678903",
+			Status:   entities.OrdersStatusProcessed,
+			BonusSum: float64(100),
+		}
 
 		expectedSQL := `UPDATE public.orders
-        SET (status, bonus_sum, updated_at, processed_at) = ($1, $2, $3, $4)
-        WHERE orders.order_id = $5::text;`
+        SET (bonus_sum, updated_at, next_check_at, processed_at, status) = ($1, $2, $3, $4, $5)
+        WHERE orders.order_id = $6::text;`
 
 		mock.ExpectExec(expectedSQL).
-			WithArgs("PROCESSED", sum, sqlmock.AnyArg(), orderID).
+			WithArgs("PROCESSED", order.BonusSum, sqlmock.AnyArg(), order.OrderID).
 			WillReturnError(errorDB)
 
-		err := repo.UpdateStatusAndBonus(ctx, orderID, status, sum)
+		err := repo.UpdateStatusAndBonus(ctx, order)
 
 		assert.Error(t, err)
 		assert.IsType(t, &entities.DomainError{}, err)
@@ -694,19 +703,21 @@ func TestRepository_UpdateStatusAndBonus(t *testing.T) {
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 
-		orderID := "12345678903"
-		status := entities.OrdersStatusProcessed
-		sum := float64(100)
+		order := entities.Order{
+			OrderID:  "12345678903",
+			Status:   entities.OrdersStatusProcessed,
+			BonusSum: float64(100),
+		}
 
 		expectedSQL := `UPDATE public.orders
         SET (status, bonus_sum, updated_at, processed_at) = ($1, $2, $3, $4)
         WHERE orders.order_id = $5::text;`
 
 		mock.ExpectExec(expectedSQL).
-			WithArgs("PROCESSED", sum, orderID).
+			WithArgs("PROCESSED", order.BonusSum, order.OrderID).
 			WillReturnError(context.DeadlineExceeded)
 
-		err := repo.UpdateStatusAndBonus(ctx, orderID, status, sum)
+		err := repo.UpdateStatusAndBonus(ctx, order)
 
 		assert.Error(t, err)
 		assert.IsType(t, &entities.DomainError{}, err)

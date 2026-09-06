@@ -193,6 +193,12 @@ func TestOrderProcessor_checkOrderBonus(t *testing.T) {
 				mock.Anything,
 			).
 			Once()
+		mockLogger.EXPECT().
+			Info(
+				"Заказ отправлен в очередь на обновление данных",
+				mock.Anything,
+			).
+			Once()
 
 		processedCh := make(chan entities.Order, 1)
 
@@ -204,7 +210,10 @@ func TestOrderProcessor_checkOrderBonus(t *testing.T) {
 
 		op.checkOrderBonus(t.Context(), "123456789")
 
-		assert.Empty(t, processedCh)
+		order := <-processedCh
+
+		assert.Equal(t, "123456789", order.OrderID)
+		assert.NotNil(t, order.NextCheckAt)
 	})
 
 	t.Run("error - bonus repository failed", func(t *testing.T) {
@@ -282,9 +291,7 @@ func TestOrderProcessor_updateStatusOrder(t *testing.T) {
 		mockOrderRepository.EXPECT().
 			UpdateStatusAndBonus(
 				mock.Anything,
-				order.OrderID,
-				order.Status,
-				order.BonusSum,
+				order,
 			).
 			Return(nil)
 
@@ -349,9 +356,7 @@ func TestOrderProcessor_updateStatusOrder(t *testing.T) {
 		mockOrderRepository.EXPECT().
 			UpdateStatusAndBonus(
 				mock.Anything,
-				order.OrderID,
-				order.Status,
-				order.BonusSum,
+				order,
 			).
 			Return(domainErr)
 
@@ -383,9 +388,7 @@ func TestOrderProcessor_updateStatusOrder(t *testing.T) {
 		mockOrderRepository.EXPECT().
 			UpdateStatusAndBonus(
 				mock.Anything,
-				order.OrderID,
-				order.Status,
-				order.BonusSum,
+				order,
 			).
 			Return(domainErr)
 
@@ -480,9 +483,7 @@ func TestOrderProcessor_orderUpdateBonus(t *testing.T) {
 		mockOrderRepository.EXPECT().
 			UpdateStatusAndBonus(
 				mock.Anything,
-				order.OrderID,
-				order.Status,
-				order.BonusSum,
+				order,
 			).
 			Return(nil)
 

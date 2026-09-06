@@ -9,22 +9,34 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
-func NewUpdateStatusAndBonus(orderID string, status entities.OrderStatus, bonusSum float64) postgres.UpdateStatement {
+func NewUpdateStatusAndBonus(
+	orderID string,
+	status entities.OrderStatus,
+	bonusSum float64,
+	nextCheckAt *time.Time,
+) postgres.UpdateStatement {
+	now := time.Now()
+
 	columns := postgres.ColumnList{
-		table.Orders.Status,
 		table.Orders.BonusSum,
 		table.Orders.UpdatedAt,
+		table.Orders.NextCheckAt,
 	}
 
 	if status == entities.OrdersStatusProcessed {
 		columns = append(columns, table.Orders.ProcessedAt)
 	}
 
+	if status != "" {
+		columns = append(columns, table.Orders.Status)
+	}
+
 	model := dbModel.Orders{
 		Status:      hydrateDomainToOrdersStatus(status),
 		BonusSum:    new(bonusSum),
-		ProcessedAt: new(time.Now()),
-		UpdatedAt:   new(time.Now()),
+		ProcessedAt: &now,
+		UpdatedAt:   &now,
+		NextCheckAt: nextCheckAt,
 	}
 
 	return table.Orders.
