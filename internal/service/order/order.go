@@ -8,6 +8,7 @@ import (
 	"github.com/bazueva/gofermart/internal/domain/pagination"
 	"github.com/bazueva/gofermart/internal/helpers"
 	"github.com/bazueva/gofermart/internal/interfaces"
+	dbPkg "github.com/bazueva/gofermart/internal/repository/db"
 	"go.uber.org/zap"
 )
 
@@ -16,8 +17,8 @@ type Repository interface {
 	CreateOrder(ctx context.Context, orderID string, userID int32, status entities.OrderStatus) *entities.DomainError
 	FindByUserID(ctx context.Context, filter entities.OrderFilter, limit int64, offset int64) ([]entities.Order, *entities.DomainError)
 	CountOrdersByUserID(ctx context.Context, orderFilter entities.OrderFilter) (int32, *entities.DomainError)
-	UserBalance(ctx context.Context, db interfaces.Tx, id int32) (float64, *entities.DomainError)
-	CreateOrderWithWithdraw(ctx context.Context, db interfaces.Tx, userID int32, orderID string, bonusSum float64) *entities.DomainError
+	UserBalance(ctx context.Context, id int32) (float64, *entities.DomainError)
+	CreateOrderWithWithdraw(ctx context.Context, userID int32, orderID string, bonusSum float64) *entities.DomainError
 	BeginTransaction(ctx context.Context) (interfaces.Tx, error)
 	UserBalanceWithWithdrawn(ctx context.Context, id int32) (entities.Balance, *entities.DomainError)
 }
@@ -82,25 +83,21 @@ func (o *Order) BalanceWithdraw(ctx context.Context, userID int32, withdraw enti
 		return errDomain
 	}
 
-	tx, _ := o.repository.BeginTransaction(ctx)
-	defer tx.Rollback()
-
-	var ok bool
-	err := tx.QueryRowContext(ctx, "SELECT pg_try_advisory_xact_lock($1, $2);", lockTypeCreateOrderWithdraw, int64(userID)).
-		Scan(&ok)
+	tx, err := o.repository.BeginTransaction(ctx)
 	if err != nil {
-		o.logger.Error("ошибка выполнения запроса блокировки", zap.Error(err))
+		o.logger.Error("ошибка начала транзакции", zap.Error(err))
 
 		return entities.NewInternalServerError(err, "")
 	}
+	defer tx.Rollback()
 
-	if !ok {
-		o.logger.Warn("запрос отклонен: операция уже выполняется параллельно", zap.Int32("userID", userID))
+	ctx = dbPkg.WithTx(ctx, tx)
 
-		return entities.NewTooManyRequestError(nil, "операция уже выполняется, попробуйте позже")
+	if errDomain = o.tryAdvisoryLock(ctx, tx, lockTypeCreateOrderWithdraw, int64(userID)); errDomain != nil {
+		return errDomain
 	}
 
-	userBalance, errDomain := o.repository.UserBalance(ctx, tx, userID)
+	userBalance, errDomain := o.repository.UserBalance(ctx, userID)
 	if errDomain != nil {
 		return errDomain
 	}
@@ -110,7 +107,7 @@ func (o *Order) BalanceWithdraw(ctx context.Context, userID int32, withdraw enti
 		return errDomain
 	}
 
-	errDomain = o.repository.CreateOrderWithWithdraw(ctx, tx, userID, withdraw.Order, withdraw.Sum)
+	errDomain = o.repository.CreateOrderWithWithdraw(ctx, userID, withdraw.Order, withdraw.Sum)
 	if errDomain != nil {
 		return errDomain
 	}
@@ -120,6 +117,45 @@ func (o *Order) BalanceWithdraw(ctx context.Context, userID int32, withdraw enti
 		o.logger.Error("ошибка Commit", zap.Error(err))
 
 		return entities.NewInternalServerError(err, "")
+	}
+
+	return nil
+}
+
+func (o *Order) tryAdvisoryLock(
+	ctx context.Context,
+	tx interfaces.Tx,
+	lockType int64,
+	key int64,
+) *entities.DomainError {
+	ok, err := dbPkg.TryLock(
+		ctx,
+		tx,
+		lockType,
+		key,
+	)
+	if err != nil {
+		o.logger.Error(
+			"ошибка выполнения запроса блокировки",
+			zap.Error(err),
+			zap.Int64("key", key),
+			zap.Int64("lockType", lockType),
+		)
+
+		return entities.NewInternalServerError(err, "")
+	}
+
+	if !ok {
+		o.logger.Warn(
+			"запрос отклонен: операция уже выполняется параллельно",
+			zap.Int64("key", key),
+			zap.Int64("lockType", lockType),
+		)
+
+		return entities.NewTooManyRequestError(
+			nil,
+			"операция уже выполняется, попробуйте позже",
+		)
 	}
 
 	return nil

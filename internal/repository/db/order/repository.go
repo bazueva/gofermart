@@ -35,7 +35,7 @@ func (r *repository) UserBalanceWithWithdrawn(ctx context.Context, userID int32)
 	}
 
 	err := queries.NewUserBalanceWithWithdrawn(userID).
-		QueryContext(ctxWithTimeout, r.db, &result)
+		QueryContext(ctxWithTimeout, r.executor(ctxWithTimeout), &result)
 
 	if err != nil && !errors.Is(err, qrm.ErrNoRows) {
 		r.logger.Error("error repository UserBalance", zap.Error(err))
@@ -49,7 +49,7 @@ func (r *repository) UserBalanceWithWithdrawn(ctx context.Context, userID int32)
 	}, nil
 }
 
-func (r *repository) CreateOrderWithWithdraw(ctx context.Context, tx interfaces.Tx, userID int32, orderID string, bonusSum float64) *entities.DomainError {
+func (r *repository) CreateOrderWithWithdraw(ctx context.Context, userID int32, orderID string, bonusSum float64) *entities.DomainError {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
@@ -59,7 +59,7 @@ func (r *repository) CreateOrderWithWithdraw(ctx context.Context, tx interfaces.
 		bonusSum*-1,
 		entities.OrdersStatusProcessed,
 	).
-		ExecContext(ctxWithTimeout, tx)
+		ExecContext(ctxWithTimeout, r.executor(ctxWithTimeout))
 	if err != nil {
 		r.logger.Error("error repository CreateOrderWithWithdraw", zap.Error(err))
 
@@ -69,7 +69,15 @@ func (r *repository) CreateOrderWithWithdraw(ctx context.Context, tx interfaces.
 	return nil
 }
 
-func (r *repository) UserBalance(ctx context.Context, tx interfaces.Tx, userID int32) (float64, *entities.DomainError) {
+func (r *repository) executor(ctx context.Context) interfaces.Executor {
+	if tx, ok := dbPkg.TxFromContext(ctx); ok {
+		return tx
+	}
+
+	return r.db
+}
+
+func (r *repository) UserBalance(ctx context.Context, userID int32) (float64, *entities.DomainError) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
@@ -78,7 +86,7 @@ func (r *repository) UserBalance(ctx context.Context, tx interfaces.Tx, userID i
 	}
 
 	err := queries.NewUserBalanceSum(userID).
-		QueryContext(ctxWithTimeout, tx, &result)
+		QueryContext(ctxWithTimeout, r.executor(ctxWithTimeout), &result)
 
 	if err != nil && !errors.Is(err, qrm.ErrNoRows) {
 		r.logger.Error("error repository UserBalance", zap.Error(err))
@@ -96,7 +104,7 @@ func (r *repository) FindStaleOrders(ctx context.Context, statuses []entities.Or
 	var result []model.Orders
 
 	err := queries.NewFindStaleOrders(statuses, limit).
-		QueryContext(ctxWithTimeout, r.db, &result)
+		QueryContext(ctxWithTimeout, r.executor(ctxWithTimeout), &result)
 	if err != nil && !errors.Is(err, qrm.ErrNoRows) {
 		r.logger.Error("error repository FindStaleOrders", zap.Error(err))
 
@@ -119,7 +127,7 @@ func (r *repository) UpdateStatusAndBonus(
 
 	_, err := queries.
 		NewUpdateStatusAndBonus(orderID, status, sum).
-		ExecContext(ctxWithTimeout, r.db)
+		ExecContext(ctxWithTimeout, r.executor(ctxWithTimeout))
 	if err != nil {
 		r.logger.Error("error repository UpdateStatusAndBonus", zap.Error(err))
 		if r.errorClassifier.ClassifyRetry(err) == dbPkg.Retriable {
@@ -141,7 +149,7 @@ func (r *repository) CountOrdersByUserID(ctx context.Context, filter entities.Or
 	}
 
 	err := queries.NewCountByUserID(filter).
-		QueryContext(ctxWithTimeout, r.db, &result)
+		QueryContext(ctxWithTimeout, r.executor(ctxWithTimeout), &result)
 	if err != nil {
 		r.logger.Error("error repository FindByOrderID", zap.Error(err))
 
@@ -163,7 +171,7 @@ func (r *repository) FindByUserID(
 	var result []model.Orders
 
 	err := queries.NewFindByUserID(filter, limit, offset).
-		QueryContext(ctxWithTimeout, r.db, &result)
+		QueryContext(ctxWithTimeout, r.executor(ctxWithTimeout), &result)
 	if err != nil && !errors.Is(err, qrm.ErrNoRows) {
 		r.logger.Error("error repository FindByOrderID", zap.Error(err))
 
@@ -197,7 +205,7 @@ func (r *repository) CreateOrder(ctx context.Context, orderID string, userID int
 		ID int32
 	}
 	err := queries.NewCreateOrder(orderID, userID, status).
-		QueryContext(ctxWithTimeout, r.db, &result)
+		QueryContext(ctxWithTimeout, r.executor(ctxWithTimeout), &result)
 	if err != nil {
 		r.logger.Error("error repository CreateOrder", zap.Error(err))
 
@@ -214,7 +222,7 @@ func (r *repository) FindByOrderID(ctx context.Context, orderID string) (*entiti
 	var result model.Orders
 
 	err := queries.NewFindByOrderID(orderID).
-		QueryContext(ctxWithTimeout, r.db, &result)
+		QueryContext(ctxWithTimeout, r.executor(ctxWithTimeout), &result)
 	if err != nil && !errors.Is(err, qrm.ErrNoRows) {
 		r.logger.Error("error repository FindByOrderID", zap.Error(err))
 

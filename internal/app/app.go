@@ -73,15 +73,14 @@ func (a *App) UserOrdersList(ctx context.Context, page int32, perPage int32) ([]
 }
 
 func (a *App) userIDFromContext(ctx context.Context, errorIfEmpty bool) (int32, *entities.DomainError) {
-	contextAuth, ok := ctx.(*contextPkg.Auth)
+	userID, ok := contextPkg.UserIDFromContext(ctx)
 	if !ok {
-		err := errors.New("ctx without ctx.Auth")
-		a.logger.Error("ctx is not contextAuth", zap.Error(err))
+		err := errors.New("ctx without userID")
+		a.logger.Error("ctx without userID", zap.Error(err))
 
 		return 0, entities.NewInternalServerError(err, "")
 	}
 
-	userID := contextAuth.UserID()
 	if errorIfEmpty && userID == 0 {
 		return 0, entities.NewUnauthorizedError(nil, "")
 	}

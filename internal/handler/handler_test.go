@@ -14,6 +14,7 @@ import (
 	interfacesMocks "github.com/bazueva/gofermart/internal/interfaces/mocks"
 	"github.com/bazueva/gofermart/internal/models"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHandler_LoginUser(t *testing.T) {
@@ -421,6 +422,417 @@ func TestHandler_UserOrdersList(t *testing.T) {
 		}
 
 		h.UserOrdersList(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+}
+
+func TestHandler_BalanceWithdraw(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - balance withdraw", func(t *testing.T) {
+		mockApp := mocks.NewMockApp(t)
+		logger := interfacesMocks.NewMockLogger(t)
+
+		withdrawRequest := models.BalanceWithdrawRequest{
+			Order: "1234567890",
+			Sum:   100,
+		}
+		body, _ := json.Marshal(withdrawRequest)
+
+		req := httptest.NewRequest(
+			http.MethodPost,
+			"/api/user/balance/withdraw",
+			bytes.NewReader(body),
+		)
+		w := httptest.NewRecorder()
+
+		mockApp.EXPECT().
+			BalanceWithDraw(req.Context(), withdrawRequest).
+			Return(nil)
+
+		h := &Handler{
+			app:    mockApp,
+			logger: logger,
+		}
+
+		h.BalanceWithdraw(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("error - invalid request body", func(t *testing.T) {
+		mockApp := mocks.NewMockApp(t)
+		logger := interfacesMocks.NewMockLogger(t)
+
+		req := httptest.NewRequest(
+			http.MethodPost,
+			"/api/user/balance/withdraw",
+			bytes.NewReader([]byte("{invalid json}")),
+		)
+		w := httptest.NewRecorder()
+
+		h := &Handler{
+			app:    mockApp,
+			logger: logger,
+		}
+
+		h.BalanceWithdraw(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		var response map[string]string
+		err := json.NewDecoder(w.Body).Decode(&response)
+
+		assert.NoError(t, err)
+		assert.Equal(
+			t,
+			"invalid character 'i' looking for beginning of object key string",
+			response["error"],
+		)
+	})
+
+	t.Run("error - app balance withdraw failed", func(t *testing.T) {
+		mockApp := mocks.NewMockApp(t)
+		logger := interfacesMocks.NewMockLogger(t)
+
+		withdrawRequest := models.BalanceWithdrawRequest{
+			Order: "1234567890",
+			Sum:   100,
+		}
+		body, _ := json.Marshal(withdrawRequest)
+
+		req := httptest.NewRequest(
+			http.MethodPost,
+			"/api/user/balance/withdraw",
+			bytes.NewReader(body),
+		)
+		w := httptest.NewRecorder()
+
+		domainErr := entities.NewPaymentRequiredError(
+			errors.New("insufficient balance"),
+			"на счету недостаточно средств",
+		)
+
+		mockApp.EXPECT().
+			BalanceWithDraw(req.Context(), withdrawRequest).
+			Return(domainErr)
+
+		h := &Handler{
+			app:    mockApp,
+			logger: logger,
+		}
+
+		h.BalanceWithdraw(w, req)
+
+		assert.Equal(t, http.StatusPaymentRequired, w.Code)
+	})
+
+	t.Run("error - app returns bad request", func(t *testing.T) {
+		mockApp := mocks.NewMockApp(t)
+		logger := interfacesMocks.NewMockLogger(t)
+
+		withdrawRequest := models.BalanceWithdrawRequest{
+			Order: "1234567890",
+			Sum:   0,
+		}
+		body, _ := json.Marshal(withdrawRequest)
+
+		req := httptest.NewRequest(
+			http.MethodPost,
+			"/api/user/balance/withdraw",
+			bytes.NewReader(body),
+		)
+		w := httptest.NewRecorder()
+
+		domainErr := entities.NewBadRequestError(
+			errors.New("invalid withdraw sum"),
+			"сумма для списания должна быть больше 0",
+		)
+
+		mockApp.EXPECT().
+			BalanceWithDraw(req.Context(), withdrawRequest).
+			Return(domainErr)
+
+		h := &Handler{
+			app:    mockApp,
+			logger: logger,
+		}
+
+		h.BalanceWithdraw(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}
+
+func TestHandler_UserWithdrawals(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - user withdrawals", func(t *testing.T) {
+		mockApp := mocks.NewMockApp(t)
+		logger := interfacesMocks.NewMockLogger(t)
+
+		req := httptest.NewRequest(
+			http.MethodGet,
+			"/api/user/withdrawals?page=1&perPage=10",
+			nil,
+		)
+		w := httptest.NewRecorder()
+
+		processedAt := time.Date(
+			2026,
+			time.August,
+			19,
+			12,
+			30,
+			45,
+			0,
+			time.UTC,
+		)
+
+		withdrawals := []entities.Order{
+			{
+				OrderID:     "1234567890",
+				BonusSum:    100,
+				ProcessedAt: &processedAt,
+			},
+			{
+				OrderID:     "0987654321",
+				BonusSum:    250,
+				ProcessedAt: nil,
+			},
+		}
+
+		mockApp.EXPECT().
+			UserWithdrawals(req.Context(), int32(1), int32(10)).
+			Return(withdrawals, nil)
+
+		h := &Handler{
+			app:    mockApp,
+			logger: logger,
+		}
+
+		h.UserWithdrawals(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response []models.Withdrawal
+		err := json.NewDecoder(w.Body).Decode(&response)
+
+		require.NoError(t, err)
+		require.Len(t, response, 2)
+
+		assert.Equal(t, "1234567890", response[0].Order)
+		assert.Equal(t, float64(-100), response[0].Sum)
+		assert.Equal(t, "2026-08-19T12:30:45+00:00", response[0].ProcessedAt)
+
+		assert.Equal(t, "0987654321", response[1].Order)
+		assert.Equal(t, float64(-250), response[1].Sum)
+		assert.Equal(t, "", response[1].ProcessedAt)
+	})
+
+	t.Run("success - no withdrawals", func(t *testing.T) {
+		mockApp := mocks.NewMockApp(t)
+		logger := interfacesMocks.NewMockLogger(t)
+
+		req := httptest.NewRequest(
+			http.MethodGet,
+			"/api/user/withdrawals?page=1&perPage=10",
+			nil,
+		)
+		w := httptest.NewRecorder()
+
+		mockApp.EXPECT().
+			UserWithdrawals(req.Context(), int32(1), int32(10)).
+			Return([]entities.Order{}, nil)
+
+		h := &Handler{
+			app:    mockApp,
+			logger: logger,
+		}
+
+		h.UserWithdrawals(w, req)
+
+		assert.Equal(t, http.StatusNoContent, w.Code)
+		assert.Empty(t, w.Body.String())
+	})
+
+	t.Run("error - app user withdrawals failed", func(t *testing.T) {
+		mockApp := mocks.NewMockApp(t)
+		logger := interfacesMocks.NewMockLogger(t)
+
+		req := httptest.NewRequest(
+			http.MethodGet,
+			"/api/user/withdrawals?page=1&perPage=10",
+			nil,
+		)
+		w := httptest.NewRecorder()
+
+		domainErr := entities.NewInternalServerError(
+			errors.New("database error"),
+			"",
+		)
+
+		mockApp.EXPECT().
+			UserWithdrawals(req.Context(), int32(1), int32(10)).
+			Return(nil, domainErr)
+
+		h := &Handler{
+			app:    mockApp,
+			logger: logger,
+		}
+
+		h.UserWithdrawals(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+
+	t.Run("success - zero values in pagination", func(t *testing.T) {
+		t.Parallel()
+
+		mockApp := mocks.NewMockApp(t)
+		logger := interfacesMocks.NewMockLogger(t)
+
+		req := httptest.NewRequest(
+			http.MethodGet,
+			"/api/user/withdrawals",
+			nil,
+		)
+		w := httptest.NewRecorder()
+
+		mockApp.EXPECT().
+			UserWithdrawals(req.Context(), int32(0), int32(0)).
+			Return([]entities.Order{
+				{
+					OrderID:  "1234567890",
+					BonusSum: 100,
+				},
+			}, nil)
+
+		h := &Handler{
+			app:    mockApp,
+			logger: logger,
+		}
+
+		h.UserWithdrawals(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response []models.Withdrawal
+		err := json.NewDecoder(w.Body).Decode(&response)
+
+		require.NoError(t, err)
+		require.Len(t, response, 1)
+
+		assert.Equal(t, "1234567890", response[0].Order)
+		assert.Equal(t, float64(-100), response[0].Sum)
+		assert.Equal(t, "", response[0].ProcessedAt)
+	})
+}
+
+func TestHandler_UserBalance(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - get user balance", func(t *testing.T) {
+		mockApp := mocks.NewMockApp(t)
+		logger := interfacesMocks.NewMockLogger(t)
+
+		req := httptest.NewRequest(
+			http.MethodGet,
+			"/api/user/balance",
+			nil,
+		)
+		w := httptest.NewRecorder()
+
+		expectedBalance := entities.Balance{
+			Balance:   1500.50,
+			Withdrawn: 350.25,
+		}
+
+		mockApp.EXPECT().
+			UserBalance(req.Context()).
+			Return(expectedBalance, nil)
+
+		h := &Handler{
+			app:    mockApp,
+			logger: logger,
+		}
+
+		h.UserBalance(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response models.Balance
+		err := json.NewDecoder(w.Body).Decode(&response)
+
+		require.NoError(t, err)
+		assert.Equal(t, expectedBalance.Balance, response.Current)
+		assert.Equal(t, expectedBalance.Withdrawn, response.Withdrawn)
+	})
+
+	t.Run("success - zero balance", func(t *testing.T) {
+		mockApp := mocks.NewMockApp(t)
+		logger := interfacesMocks.NewMockLogger(t)
+
+		req := httptest.NewRequest(
+			http.MethodGet,
+			"/api/user/balance",
+			nil,
+		)
+		w := httptest.NewRecorder()
+
+		expectedBalance := entities.Balance{
+			Balance:   0,
+			Withdrawn: 0,
+		}
+
+		mockApp.EXPECT().
+			UserBalance(req.Context()).
+			Return(expectedBalance, nil)
+
+		h := &Handler{
+			app:    mockApp,
+			logger: logger,
+		}
+
+		h.UserBalance(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response models.Balance
+		err := json.NewDecoder(w.Body).Decode(&response)
+
+		require.NoError(t, err)
+		assert.Equal(t, float64(0), response.Current)
+		assert.Equal(t, float64(0), response.Withdrawn)
+	})
+
+	t.Run("error - app user balance failed", func(t *testing.T) {
+		mockApp := mocks.NewMockApp(t)
+		logger := interfacesMocks.NewMockLogger(t)
+
+		req := httptest.NewRequest(
+			http.MethodGet,
+			"/api/user/balance",
+			nil,
+		)
+		w := httptest.NewRecorder()
+
+		domainErr := entities.NewInternalServerError(
+			errors.New("database error"),
+			"",
+		)
+
+		mockApp.EXPECT().
+			UserBalance(req.Context()).
+			Return(entities.Balance{}, domainErr)
+
+		h := &Handler{
+			app:    mockApp,
+			logger: logger,
+		}
+
+		h.UserBalance(w, req)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})

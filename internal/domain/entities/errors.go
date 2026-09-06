@@ -22,7 +22,7 @@ const (
 	NoContentErrorType
 	RetriableErrorType
 	PaymentRequiredErrorType
-	ToManyRequestErrorType
+	TooManyRequestErrorType
 )
 
 func (e *DomainError) Error() string {
@@ -103,7 +103,7 @@ func NewPaymentRequiredError(err error, text string) *DomainError {
 
 func NewTooManyRequestError(err error, text string) *DomainError {
 	return &DomainError{
-		ErrorType: ToManyRequestErrorType,
+		ErrorType: TooManyRequestErrorType,
 		SourceErr: err,
 		Text:      lo.Ternary(text != "", text, "Слишком много запросов"),
 	}

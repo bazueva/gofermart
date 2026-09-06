@@ -18,11 +18,11 @@ import (
 func TestApp_CreateOrder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("ctx without Auth ctx", func(t *testing.T) {
+	t.Run("ctx without userID", func(t *testing.T) {
 		t.Parallel()
 
 		logger := mocks.NewMockLogger(t)
-		logger.EXPECT().Error("ctx is not contextAuth", mock2.Anything)
+		logger.EXPECT().Error("ctx without userID", mock2.Anything)
 
 		appTest := NewApp(nil, nil, logger)
 		err := appTest.CreateOrder(t.Context(), "test")
@@ -35,7 +35,7 @@ func TestApp_CreateOrder(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		ctx := context.NewAuth(t.Context())
+		ctx := context.WithUserID(t.Context(), 0)
 		appTest := NewApp(nil, nil, logger)
 		err := appTest.CreateOrder(ctx, "test")
 
@@ -48,8 +48,7 @@ func TestApp_CreateOrder(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		ctx := context.NewAuth(t.Context()).
-			WithUserID(20)
+		ctx := context.WithUserID(t.Context(), 20)
 
 		orderService := appMocks.NewMockOrderService(t)
 		orderService.EXPECT().CreateOrder(ctx, "12323", int32(20)).
@@ -67,8 +66,7 @@ func TestApp_CreateOrder(t *testing.T) {
 
 		logger := mocks.NewMockLogger(t)
 
-		ctx := context.NewAuth(t.Context()).
-			WithUserID(20)
+		ctx := context.WithUserID(t.Context(), 20)
 
 		orderService := appMocks.NewMockOrderService(t)
 		orderService.EXPECT().CreateOrder(ctx, "12323", int32(20)).
@@ -268,7 +266,7 @@ func TestApp_UserOrdersList(t *testing.T) {
 		mockOrderService := appMocks.NewMockOrderService(t)
 
 		userID := int32(123)
-		ctx := context.NewAuth(t.Context()).WithUserID(userID)
+		ctx := context.WithUserID(t.Context(), userID)
 
 		page := int32(1)
 		perPage := int32(20)
@@ -302,13 +300,13 @@ func TestApp_UserOrdersList(t *testing.T) {
 		perPage := int32(20)
 
 		domainErr := entities.NewInternalServerError(
-			errors.New("ctx without ctx.Auth"),
+			errors.New("ctx without userID"),
 			"",
 		)
 
 		logger := mocks.NewMockLogger(t)
 		logger.EXPECT().
-			Error("ctx is not contextAuth", mock2.Anything)
+			Error("ctx without userID", mock2.Anything)
 
 		a := &App{
 			logger: logger,
@@ -325,7 +323,7 @@ func TestApp_UserOrdersList(t *testing.T) {
 		mockOrderService := appMocks.NewMockOrderService(t)
 
 		userID := int32(123)
-		ctx := context.NewAuth(t.Context()).WithUserID(userID)
+		ctx := context.WithUserID(t.Context(), userID)
 		page := int32(1)
 		perPage := int32(20)
 
@@ -355,7 +353,7 @@ func TestApp_UserIDFromContext(t *testing.T) {
 
 	t.Run("success - get userID from context", func(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
-		ctx := context.NewAuth(t.Context()).WithUserID(123)
+		ctx := context.WithUserID(t.Context(), 123)
 
 		a := &App{
 			logger: logger,
@@ -369,7 +367,7 @@ func TestApp_UserIDFromContext(t *testing.T) {
 
 	t.Run("success - userID 0 with errorIfEmpty false", func(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
-		ctx := context.NewAuth(t.Context()).WithUserID(0)
+		ctx := context.WithUserID(t.Context(), 0)
 
 		a := &App{
 			logger: logger,
@@ -384,7 +382,7 @@ func TestApp_UserIDFromContext(t *testing.T) {
 	t.Run("error - context without Auth", func(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 		logger.EXPECT().
-			Error("ctx is not contextAuth", mock2.Anything)
+			Error("ctx without userID", mock2.Anything)
 
 		ctx := t.Context()
 
@@ -401,7 +399,7 @@ func TestApp_UserIDFromContext(t *testing.T) {
 
 	t.Run("error - userID 0 with errorIfEmpty true", func(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
-		ctx := context.NewAuth(t.Context()).WithUserID(0)
+		ctx := context.WithUserID(t.Context(), 0)
 
 		a := &App{
 			logger: logger,
@@ -422,7 +420,7 @@ func TestApp_BalanceWithDraw(t *testing.T) {
 		mockOrderService := appMocks.NewMockOrderService(t)
 		logger := mocks.NewMockLogger(t)
 
-		ctx := context.NewAuth(t.Context()).WithUserID(123)
+		ctx := context.WithUserID(t.Context(), 123)
 		request := models.BalanceWithdrawRequest{
 			Order: "12345678903",
 			Sum:   100.50,
@@ -448,7 +446,7 @@ func TestApp_BalanceWithDraw(t *testing.T) {
 	t.Run("error - user not authorized", func(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 
-		ctx := context.NewAuth(t.Context()).WithUserID(0)
+		ctx := context.WithUserID(t.Context(), 0)
 		request := models.BalanceWithdrawRequest{
 			Order: "12345678903",
 			Sum:   100.50,
@@ -466,7 +464,7 @@ func TestApp_BalanceWithDraw(t *testing.T) {
 
 	t.Run("error - context without Auth", func(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
-		logger.EXPECT().Error("ctx is not contextAuth", mock2.Anything)
+		logger.EXPECT().Error("ctx without userID", mock2.Anything)
 
 		ctx := t.Context()
 		request := models.BalanceWithdrawRequest{
@@ -488,7 +486,7 @@ func TestApp_BalanceWithDraw(t *testing.T) {
 		mockOrderService := appMocks.NewMockOrderService(t)
 		logger := mocks.NewMockLogger(t)
 
-		ctx := context.NewAuth(t.Context()).WithUserID(123)
+		ctx := context.WithUserID(t.Context(), 123)
 		request := models.BalanceWithdrawRequest{
 			Order: "12345678903",
 			Sum:   100.50,
@@ -525,7 +523,7 @@ func TestApp_UserWithdrawals(t *testing.T) {
 		mockOrderService := appMocks.NewMockOrderService(t)
 		logger := mocks.NewMockLogger(t)
 
-		ctx := context.NewAuth(t.Context()).WithUserID(123)
+		ctx := context.WithUserID(t.Context(), 123)
 		page := int32(1)
 		perPage := int32(20)
 
@@ -565,7 +563,7 @@ func TestApp_UserWithdrawals(t *testing.T) {
 		mockOrderService := appMocks.NewMockOrderService(t)
 		logger := mocks.NewMockLogger(t)
 
-		ctx := context.NewAuth(t.Context()).WithUserID(123)
+		ctx := context.WithUserID(t.Context(), 123)
 		page := int32(1)
 		perPage := int32(20)
 
@@ -587,7 +585,7 @@ func TestApp_UserWithdrawals(t *testing.T) {
 	t.Run("error - user not authorized", func(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 
-		ctx := context.NewAuth(t.Context()).WithUserID(0)
+		ctx := context.WithUserID(t.Context(), 0)
 		page := int32(1)
 		perPage := int32(20)
 
@@ -613,7 +611,7 @@ func TestApp_UserWithdrawals(t *testing.T) {
 			logger: logger,
 		}
 
-		logger.EXPECT().Error("ctx is not contextAuth", mock2.Anything).Return()
+		logger.EXPECT().Error("ctx without userID", mock2.Anything).Return()
 
 		orders, err := a.UserWithdrawals(ctx, page, perPage)
 
@@ -626,7 +624,7 @@ func TestApp_UserWithdrawals(t *testing.T) {
 		mockOrderService := appMocks.NewMockOrderService(t)
 		logger := mocks.NewMockLogger(t)
 
-		ctx := context.NewAuth(t.Context()).WithUserID(123)
+		ctx := context.WithUserID(t.Context(), 123)
 		page := int32(1)
 		perPage := int32(20)
 
@@ -659,7 +657,7 @@ func TestApp_UserBalance(t *testing.T) {
 		mockOrderService := appMocks.NewMockOrderService(t)
 		logger := mocks.NewMockLogger(t)
 
-		ctx := context.NewAuth(t.Context()).WithUserID(123)
+		ctx := context.WithUserID(t.Context(), 123)
 
 		mockOrderService.EXPECT().
 			UserBalance(ctx, int32(123)).
@@ -682,7 +680,7 @@ func TestApp_UserBalance(t *testing.T) {
 	t.Run("error - user not authorized", func(t *testing.T) {
 		logger := mocks.NewMockLogger(t)
 
-		ctx := context.NewAuth(t.Context()).WithUserID(0)
+		ctx := context.WithUserID(t.Context(), 0)
 
 		a := &App{
 			logger: logger,
@@ -704,7 +702,7 @@ func TestApp_UserBalance(t *testing.T) {
 			logger: logger,
 		}
 
-		logger.EXPECT().Error("ctx is not contextAuth", mock2.Anything).Return()
+		logger.EXPECT().Error("ctx without userID", mock2.Anything).Return()
 
 		balance, err := a.UserBalance(ctx)
 
@@ -717,7 +715,7 @@ func TestApp_UserBalance(t *testing.T) {
 		mockOrderService := appMocks.NewMockOrderService(t)
 		logger := mocks.NewMockLogger(t)
 
-		ctx := context.NewAuth(t.Context()).WithUserID(123)
+		ctx := context.WithUserID(t.Context(), 123)
 
 		domainErr := entities.NewInternalServerError(
 			errors.New("database error"),
