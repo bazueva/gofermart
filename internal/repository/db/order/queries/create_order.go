@@ -6,6 +6,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
+// NewCreateOrder создание запроса для создания заказа.
 func NewCreateOrder(orderID string, userID int32, status entities.OrderStatus) postgres.InsertStatement {
 	return table.Orders.
 		INSERT(

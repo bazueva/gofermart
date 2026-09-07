@@ -9,6 +9,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
+// NewUpdateStatusAndBonus создание запроса для обновления статуса заказа и бонусов.
 func NewUpdateStatusAndBonus(
 	orderID string,
 	status entities.OrderStatus,

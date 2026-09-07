@@ -5,6 +5,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
+// NewFindByLogin создает запрос для поиска пользователя по логину.
 func NewFindByLogin(login string) postgres.SelectStatement {
 	return postgres.
 		SELECT(

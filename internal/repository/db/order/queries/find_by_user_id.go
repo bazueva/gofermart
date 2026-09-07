@@ -6,6 +6,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
+// NewFindByUserID создание запроса для поиска заказов по фильтру.
 func NewFindByUserID(filter entities.OrderFilter, limit, offset int64) postgres.SelectStatement {
 	query := postgres.SELECT(
 		table.Orders.ID,

@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Количество воркеров
 const workerCount = 3
 
 type BonusRepository interface {
@@ -29,6 +30,8 @@ type OrderProcessor struct {
 	orderRepository    OrderRepository
 }
 
+// AddOrderIDToQueue добавляет идентификатор заказа в очередь на обработку.
+// Если очередь переполнена, заказ не добавляется в очередь
 func (op *OrderProcessor) AddOrderIDToQueue(orderID string) {
 	select {
 	case op.ordersProcessingCh <- orderID:
@@ -38,6 +41,8 @@ func (op *OrderProcessor) AddOrderIDToQueue(orderID string) {
 	}
 }
 
+// AddOrderToQueue добавляет заказ в очередь на обновление.
+// Если очередь переполнена, заказ не добавляется в очередь.
 func (op *OrderProcessor) AddOrderToQueue(order entities.Order) {
 	select {
 	case op.ordersProcessedCh <- order:
@@ -47,12 +52,14 @@ func (op *OrderProcessor) AddOrderToQueue(order entities.Order) {
 	}
 }
 
+// NewOrderProcessor создает обработчик заказов с очередями для обработки
+// заказов и обновления их данных.
 func NewOrderProcessor(
 	bonusRepository BonusRepository,
 	orderRepository OrderRepository,
 	logger interfaces.Logger,
 ) *OrderProcessor {
-	// канал для обработка заказов, у которых статус NEW, PROCESSING
+	// канал для обработки заказов, у которых статус NEW, PROCESSING
 	ordersProcessingCh := make(chan string, workerCount*5)
 	// канал с результатом начисления по заказам
 	ordersProcessedCh := make(chan entities.Order, workerCount*5)
@@ -66,15 +73,20 @@ func NewOrderProcessor(
 	}
 }
 
+// orderStatusesCheck статусы заказов для проверки начисления бонусов.
 var orderStatusesCheck = []entities.OrderStatus{
 	entities.OrdersStatusNew,
 	entities.OrdersStatusProcessing,
 }
 
 const (
+	// databasePollerInterval интервал проверки заказов на начисление бонусов.
 	databasePollerInterval = 1 * time.Minute
 )
 
+// StartDatabasePoller запускает фоновую проверку заказов,
+// требующих проверки начисления бонусов, и добавляет найденные заказы в очередь
+// на обработку.
 func (op *OrderProcessor) StartDatabasePoller(ctx context.Context) {
 	tick := time.Tick(databasePollerInterval)
 
@@ -102,6 +114,14 @@ func (op *OrderProcessor) StartDatabasePoller(ctx context.Context) {
 	}()
 }
 
+// Start запускает фоновые воркеры для обработки заказов и обновления их данных.
+//
+// Воркеры обработки получают идентификаторы заказов из ordersProcessingCh,
+// проверяют состояние начисления бонусов и передают результаты в
+// ordersProcessedCh.
+//
+// Воркеры обновления получают обработанные заказы из ordersProcessedCh
+// и сохраняют результаты в базе данных.
 func (op *OrderProcessor) Start(ctx context.Context) {
 	var wgProcessWorkers sync.WaitGroup
 	var wgSaveResults sync.WaitGroup
@@ -138,17 +158,24 @@ func (op *OrderProcessor) Start(ctx context.Context) {
 	}()
 }
 
+// orderCheckStatus получает идентификаторы заказов из очереди
+// и проверяет состояние начисления бонусов по каждому заказу.
 func (op *OrderProcessor) orderCheckStatus(ctx context.Context) {
 	for orderID := range op.ordersProcessingCh {
 		op.checkOrderBonus(ctx, orderID)
 	}
 }
 
+// checkOrderBonus проверяет наличие заказа в системе начисления бонусов
+// и передает результат в очередь на обновление данных заказа.
+//
+// Если заказ не найден, он добавляется в очередь с отложенной повторной
+// проверкой через 2 минуты.
 func (op *OrderProcessor) checkOrderBonus(ctx context.Context, orderID string) {
 	result, err := op.bonusRepository.GetOrder(ctx, orderID)
 	if err != nil {
 		if err.ErrorType == entities.NoContentErrorType {
-			// заказу статус не присваиваем так как падают тесты на гитлабе
+			// заказу статус не присваиваем, так как падают тесты на гитлабе
 			op.logger.Info("Заказ не найден в bonus, заказу присвоен статус INVALID", zap.String("order_id", orderID))
 
 			result = &entities.Order{
@@ -171,6 +198,8 @@ func (op *OrderProcessor) checkOrderBonus(ctx context.Context, orderID string) {
 	}
 }
 
+// orderUpdateBonus получает результаты проверки заказов из очереди
+// и обновляет данные заказов в базе данных.
 func (op *OrderProcessor) orderUpdateBonus(ctx context.Context) {
 	for orderData := range op.ordersProcessedCh {
 		// если ctx отменен, создаем новый контект чтобы запросы в БД успели выполниться
@@ -182,6 +211,8 @@ func (op *OrderProcessor) orderUpdateBonus(ctx context.Context) {
 	}
 }
 
+// updateStatusOrder обновляет данные заказа в базе данных.
+// При retriable ошибке добавляет заказ обратно в очередь на обработку.
 func (op *OrderProcessor) updateStatusOrder(ctx context.Context, data entities.Order) {
 	if data.OrderID == "" {
 		op.logger.Info("updateStatusOrder пустой orderID", zap.Any("order", data))

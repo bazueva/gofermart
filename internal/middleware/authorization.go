@@ -13,6 +13,7 @@ type CheckerJWTToken interface {
 	CheckJWTToken(token string) (int32, *entities.DomainError)
 }
 
+// Authorization middleware для проверки авторизации пользователя.
 func Authorization(checkerToken CheckerJWTToken, logger interfaces.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {

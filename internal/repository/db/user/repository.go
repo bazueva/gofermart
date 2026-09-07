@@ -19,6 +19,7 @@ type repository struct {
 	logger interfaces.Logger
 }
 
+// FindByLogin поиск пользователя по логину.
 func (r *repository) FindByLogin(ctx context.Context, login string) (entities.User, *entities.DomainError) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -41,9 +42,11 @@ func (r *repository) FindByLogin(ctx context.Context, login string) (entities.Us
 }
 
 const (
+	// defaultTimeout таймаут для выполнения запросов к базе данных.
 	defaultTimeout = 1 * time.Second
 )
 
+// CreateUser создает нового пользователя.
 func (r *repository) CreateUser(ctx context.Context, user entities.User) (int32, *entities.DomainError) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -66,6 +69,7 @@ func (r *repository) CreateUser(ctx context.Context, user entities.User) (int32,
 	return result.ID, nil
 }
 
+// ExistLogin проверяет наличие пользователя с указанным логином.
 func (r *repository) ExistLogin(ctx context.Context, login string) (bool, *entities.DomainError) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -84,6 +88,7 @@ func (r *repository) ExistLogin(ctx context.Context, login string) (bool, *entit
 	return response.Exists, nil
 }
 
+// NewRepository создает новый репозиторий для работы с пользователями.
 func NewRepository(db interfaces.DB, logger interfaces.Logger) *repository {
 	return &repository{
 		db:     db,

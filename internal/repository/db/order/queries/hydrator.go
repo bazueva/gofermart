@@ -7,6 +7,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
+// hydrateDomainToOrdersStatusEnum преобразование статуса заказа из доменной модели в тип enum.
 func hydrateDomainToOrdersStatusEnum(status entities.OrderStatus) postgres.Expression {
 	switch status {
 	case entities.OrdersStatusNew:
@@ -22,6 +23,7 @@ func hydrateDomainToOrdersStatusEnum(status entities.OrderStatus) postgres.Expre
 	}
 }
 
+// hydrateDomainToOrdersStatus преобразование статуса заказа из доменной модели в тип БД.
 func hydrateDomainToOrdersStatus(status entities.OrderStatus) dbModel.OrdersStatus {
 	switch status {
 	case entities.OrdersStatusNew:

@@ -8,6 +8,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
+// NewCreateOrderWithdraw создание запроса для создания заказа со списанием бонусов.
 func NewCreateOrderWithdraw(
 	orderID string,
 	userID int32,

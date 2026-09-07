@@ -6,6 +6,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
+// NewUserBalanceWithWithdrawn создание запроса для получения информации о балансе и списанных бонусах пользователя.
 func NewUserBalanceWithWithdrawn(userID int32) postgres.SelectStatement {
 	sumWithdrawals := postgres.COALESCE(
 		postgres.SUM(

@@ -15,18 +15,21 @@ import (
 	"go.uber.org/zap"
 )
 
+// Repository структура для работы с сервисом бонусов.
 type repository struct {
 	client *resty.Client
 	addr   string
 	logger interfaces.Logger
 }
 
+// Order структура для хранения информации о заказе.
 type order struct {
 	Order   string  `json:"order"`
 	Status  string  `json:"status"`
 	Accrual float64 `json:"accrual"`
 }
 
+// GetOrder получает информацию о заказе из сервиса бонусов.
 func (r *repository) GetOrder(ctx context.Context, orderID string) (*entities.Order, *entities.DomainError) {
 	url := fmt.Sprintf("%s/api/orders/%s", r.addr, orderID)
 
@@ -71,6 +74,7 @@ func (r *repository) GetOrder(ctx context.Context, orderID string) (*entities.Or
 	}, nil
 }
 
+// checkResponseStatus проверяет статус ответа.
 func (r *repository) checkResponseStatus(code int, orderID string) *entities.DomainError {
 	switch code {
 	case http.StatusNoContent:
@@ -95,6 +99,7 @@ func (r *repository) checkResponseStatus(code int, orderID string) *entities.Dom
 	return nil
 }
 
+// NewRepository создает новый экземпляр репозитория бонусов.
 func NewRepository(addr string, logger interfaces.Logger) (*repository, error) {
 	if addr == "" {
 		return nil, fmt.Errorf("не указан адрес сервера")
@@ -107,6 +112,7 @@ func NewRepository(addr string, logger interfaces.Logger) (*repository, error) {
 	}, nil
 }
 
+// createClient создает новый экземпляр клиента для работы с сервисом бонусов.
 func createClient(logger interfaces.Logger) *resty.Client {
 	return resty.New().
 		SetRetryCount(3).
