@@ -4,12 +4,14 @@ import (
 	"github.com/samber/lo"
 )
 
+// DomainError структура для доменных ошибок.
 type DomainError struct {
 	ErrorType ErrorType
 	SourceErr error
 	Text      string
 }
 
+// ErrorType тип ошибки.
 type ErrorType int
 
 const (
@@ -25,10 +27,12 @@ const (
 	TooManyRequestErrorType
 )
 
+// Error возвращает текст ошибки.
 func (e *DomainError) Error() string {
 	return e.Text
 }
 
+// NewInternalServerError создает ошибку Internal Server Error.
 func NewInternalServerError(err error, text string) *DomainError {
 	return &DomainError{
 		ErrorType: InternalServerErrorType,
@@ -37,6 +41,7 @@ func NewInternalServerError(err error, text string) *DomainError {
 	}
 }
 
+// NewUnauthorizedError создает ошибку Unauthorized.
 func NewUnauthorizedError(err error, text string) *DomainError {
 	return &DomainError{
 		ErrorType: UnauthorizedErrorType,
@@ -45,6 +50,7 @@ func NewUnauthorizedError(err error, text string) *DomainError {
 	}
 }
 
+// NewOkError создает ошибку Ok.
 func NewOkError(err error, text string) *DomainError {
 	return &DomainError{
 		ErrorType: OkEntityErrorType,
@@ -53,6 +59,7 @@ func NewOkError(err error, text string) *DomainError {
 	}
 }
 
+// NewUnprocessableEntity создает ошибку UnprocessableEntity.
 func NewUnprocessableEntity(err error, text string) *DomainError {
 	return &DomainError{
 		ErrorType: UnprocessableEntityErrorType,
@@ -69,6 +76,7 @@ func NewConflictError(err error, text string) *DomainError {
 	}
 }
 
+// NewBadRequestError создает ошибку BadRequest.
 func NewBadRequestError(err error, text string) *DomainError {
 	return &DomainError{
 		ErrorType: BadRequestErrorType,
@@ -77,6 +85,7 @@ func NewBadRequestError(err error, text string) *DomainError {
 	}
 }
 
+// NewNoContentError создает ошибку NoContent.
 func NewNoContentError(err error, text string) *DomainError {
 	return &DomainError{
 		ErrorType: NoContentErrorType,
@@ -85,6 +94,7 @@ func NewNoContentError(err error, text string) *DomainError {
 	}
 }
 
+// NewRetriableError создает ошибку Retriable.
 func NewRetriableError(err error, text string) *DomainError {
 	return &DomainError{
 		ErrorType: RetriableErrorType,
@@ -93,6 +103,7 @@ func NewRetriableError(err error, text string) *DomainError {
 	}
 }
 
+// NewPaymentRequiredError создает ошибку PaymentRequired.
 func NewPaymentRequiredError(err error, text string) *DomainError {
 	return &DomainError{
 		ErrorType: PaymentRequiredErrorType,
@@ -101,6 +112,7 @@ func NewPaymentRequiredError(err error, text string) *DomainError {
 	}
 }
 
+// NewTooManyRequestError создает ошибку TooManyRequest.
 func NewTooManyRequestError(err error, text string) *DomainError {
 	return &DomainError{
 		ErrorType: TooManyRequestErrorType,

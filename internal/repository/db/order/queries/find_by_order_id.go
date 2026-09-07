@@ -5,6 +5,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
+// NewFindByOrderID создание запроса для поиска заказа по идентификатору заказа.
 func NewFindByOrderID(orderID string) postgres.SelectStatement {
 	return postgres.SELECT(
 		table.Orders.ID,

@@ -5,6 +5,7 @@ import (
 	dbModel "github.com/bazueva/gofermart/schema.gen/gofermart/public/model"
 )
 
+// hydrateOrdersStatusToDomain преобразование статуса заказа из базы данных в доменный статус.
 func hydrateOrdersStatusToDomain(status dbModel.OrdersStatus) entities.OrderStatus {
 	switch status {
 	case dbModel.OrdersStatus_New:

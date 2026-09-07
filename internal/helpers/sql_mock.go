@@ -10,6 +10,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 )
 
+// SQLMockTest возвращает mock-соединение с базой данных и Sqlmock для тестирования SQL-запросов.
 func SQLMockTest(t *testing.T) (*sql.DB, sqlmock.Sqlmock, error) {
 	return sqlmock.New(
 		sqlmock.QueryMatcherOption(sqlmock.QueryMatcherFunc(func(expectedSQL, actualSQL string) error {
@@ -28,6 +29,7 @@ func SQLMockTest(t *testing.T) (*sql.DB, sqlmock.Sqlmock, error) {
 	)
 }
 
+// NormalizeSQL нормализует SQL-запрос, удаляя лишние пробелы и форматируя его.
 func NormalizeSQL(sql string) string {
 	sql = strings.ReplaceAll(sql, "\t", " ")
 

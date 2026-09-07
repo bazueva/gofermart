@@ -1,5 +1,6 @@
 package helpers
 
+// ValidateLuhn проверяет, является ли номер действительным по алгоритму Луна.
 func ValidateLuhn(number string) bool {
 	if number == "" {
 		return false

@@ -11,6 +11,7 @@ const (
 	OrdersStatusProcessed  OrderStatus = "PROCESSED"
 )
 
+// Order структура заказ.
 type Order struct {
 	ID          int32
 	OrderID     string
@@ -22,18 +23,23 @@ type Order struct {
 	NextCheckAt *time.Time
 }
 
+// BalanceWithdraw структура снятия бонусов.
 type BalanceWithdraw struct {
 	Order string
 	Sum   float64
 }
 
+// OrderFilterOrderType тип фильтрации заказов.
 type OrderFilterOrderType int
 
 const (
+	// OrderFilterAddBalanceType Тип заказа добавления бонусов.
 	OrderFilterAddBalanceType OrderFilterOrderType = iota
+	// OrderFilterWriteOffBalanceType Тип заказа снятия бонусов.
 	OrderFilterWriteOffBalanceType
 )
 
+// OrderFilter структура фильтрации заказов.
 type OrderFilter struct {
 	OrderType *OrderFilterOrderType
 	UserID    int32

@@ -1,5 +1,6 @@
 package models
 
+// Order структура для хранения информации о заказе.
 type Order struct {
 	Number      string  `json:"number"`
 	Status      string  `json:"status"`

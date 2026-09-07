@@ -9,6 +9,7 @@ import (
 	"github.com/samber/lo"
 )
 
+// NewFindStaleOrders создание запроса для поиска заказов, которые необходимо обработать.
 func NewFindStaleOrders(statuses []entities.OrderStatus, limit int64) postgres.SelectStatement {
 	staleThreshold := time.Now().Add(-2 * time.Minute)
 

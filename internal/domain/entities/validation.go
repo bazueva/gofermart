@@ -8,11 +8,13 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+// ValidateError структура ошибка валидации.
 type ValidateError struct {
 	Field string
 	Error string
 }
 
+// ConvertValidatorErrors конвертирует ошибки валидации в слайс ошибок ValidateError.
 func ConvertValidatorErrors(err error) []ValidateError {
 	if err == nil {
 		return nil

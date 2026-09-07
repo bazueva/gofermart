@@ -5,6 +5,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
+// NewExistLogin создает запрос для проверки наличия пользователя с указанным логином.
 func NewExistLogin(login string) postgres.SelectStatement {
 	return postgres.SELECT(
 		postgres.EXISTS(

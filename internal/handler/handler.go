@@ -24,11 +24,13 @@ type App interface {
 	UserBalance(ctx context.Context) (entities.Balance, *entities.DomainError)
 }
 
+// Handler обрабатывает HTTP-запросы приложения.
 type Handler struct {
 	logger interfaces.Logger
 	app    App
 }
 
+// NewHandler создает новый обработчик HTTP-запросов.
 func NewHandler(logger interfaces.Logger, application App) *Handler {
 	return &Handler{
 		logger: logger,
@@ -36,6 +38,24 @@ func NewHandler(logger interfaces.Logger, application App) *Handler {
 	}
 }
 
+// LoginUser Аутентификация пользователя.
+//
+// POST /api/user/login HTTP/1.1
+//
+// Тело запроса:
+//
+//	{
+//	    "login": "user",
+//	    "password": "password"
+//	}
+//
+// Ответ:
+//
+//	{
+//	    "token": "eyJhbGciOiJIUzI1NiIs..."
+//	}
+//
+// При успешной аутентификации возвращает HTTP 200 OK.
 func (h *Handler) LoginUser(w http.ResponseWriter, request *http.Request) {
 	defer func() {
 		if err := request.Body.Close(); err != nil {
@@ -69,6 +89,24 @@ func (h *Handler) LoginUser(w http.ResponseWriter, request *http.Request) {
 	})
 }
 
+// RegisterUser Регистрация нового пользователя.
+//
+// POST /api/user/register HTTP/1.1
+//
+// Тело запроса:
+//
+//	{
+//	    "login": "user",
+//	    "password": "password"
+//	}
+//
+// Ответ:
+//
+//	{
+//	    "token": "eyJhbGciOiJIUzI1NiIs..."
+//	}
+//
+// При успешной регистрации возвращает HTTP 200 OK.
 func (h *Handler) RegisterUser(w http.ResponseWriter, request *http.Request) {
 	defer func() {
 		if err := request.Body.Close(); err != nil {
@@ -129,6 +167,15 @@ func (h *Handler) errorHandler(writer http.ResponseWriter, err error, statusCode
 	})
 }
 
+// CreateOrder Регистрация нового заказа пользователя.
+//
+// POST /api/user/orders HTTP/1.1
+//
+// Тело запроса:
+//
+//	237722727171
+//
+// При успешной регистрации возвращает HTTP 202 Accepted.
 func (h *Handler) CreateOrder(writer http.ResponseWriter, request *http.Request) {
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
@@ -158,6 +205,28 @@ func (h *Handler) CreateOrder(writer http.ResponseWriter, request *http.Request)
 	writer.WriteHeader(http.StatusAccepted)
 }
 
+// UserOrdersList Получение списка заказов пользователя.
+//
+// GET /api/user/orders?page=1&perPage=10 HTTP/1.1
+//
+// Ответ:
+//
+//	[
+//	    {
+//	        "number": "237722727171",
+//	        "status": "PROCESSED",
+//	        "accrual": 500.5,
+//	        "uploaded_at": "2020-12-10T15:15:45+03:00"
+//	    },
+//	    {
+//	        "number": "237722727172",
+//	        "status": "PROCESSING",
+//	        "accrual": 42,
+//	        "uploaded_at": ""
+//	    }
+//	]
+//
+// Если заказов нет, возвращается HTTP 204 No Content.
 func (h *Handler) UserOrdersList(writer http.ResponseWriter, request *http.Request) {
 	orders, errDomain := h.app.UserOrdersList(
 		request.Context(),
@@ -204,6 +273,18 @@ func (h *Handler) UserOrdersList(writer http.ResponseWriter, request *http.Reque
 	writer.Write(resultJSON)
 }
 
+// BalanceWithdraw Списание бонусов с баланса пользователя.
+//
+// POST /api/user/balance/withdraw HTTP/1.1
+//
+// Запрос:
+//
+//	{
+//	    "order": "237722727171",
+//	    "sum": 500.5
+//	}
+//
+// При успешном выполнении возвращает HTTP 200 OK.
 func (h *Handler) BalanceWithdraw(writer http.ResponseWriter, request *http.Request) {
 	defer func() {
 		if err := request.Body.Close(); err != nil {
@@ -231,6 +312,24 @@ func (h *Handler) BalanceWithdraw(writer http.ResponseWriter, request *http.Requ
 	writer.WriteHeader(http.StatusOK)
 }
 
+// UserWithdrawals Получение списка списаний пользователя.
+//
+// GET /api/user/withdrawals?page=1&perPage=10 HTTP/1.1
+//
+// Ответ:
+//
+//	[
+//	    {
+//	        "order": "237722727171",
+//	        "sum": 500.5,
+//	        "processed_at": "2020-12-10T15:15:45+03:00"
+//	    },
+//	    {
+//	        "order": "237722727172",
+//	        "sum": 42,
+//	        "processed_at": "2020-12-11T10:20:30+03:00"
+//	    }
+//	]
 func (h *Handler) UserWithdrawals(writer http.ResponseWriter, request *http.Request) {
 	withdrawals, errDomain := h.app.UserWithdrawals(
 		request.Context(),
@@ -277,6 +376,16 @@ func (h *Handler) UserWithdrawals(writer http.ResponseWriter, request *http.Requ
 	writer.Write(resultJSON)
 }
 
+// UserBalance Получение текущего баланса пользователя.
+//
+// GET /api/user/balance HTTP/1.1
+//
+// Ответ:
+//
+//	{
+//	    "current": 500.5,
+//	    "withdrawn": 42
+//	}
 func (h *Handler) UserBalance(writer http.ResponseWriter, request *http.Request) {
 	result, errDomain := h.app.UserBalance(request.Context())
 	if errDomain != nil {

@@ -6,6 +6,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
+// NewUserBalanceSum создание запроса для получения суммы бонусов пользователя.
 func NewUserBalanceSum(userID int32) postgres.SelectStatement {
 	return postgres.SELECT(
 		postgres.COALESCE(

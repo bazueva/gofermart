@@ -4,6 +4,7 @@ import (
 	"github.com/bazueva/gofermart/internal/domain/entities"
 )
 
+// hydrateOrdersStatusToDomain преобразует статус заказа из сервиса бонусов в доменный статус.
 func hydrateOrdersStatusToDomain(status string) entities.OrderStatus {
 	switch status {
 	case "REGISTERED":

@@ -27,16 +27,20 @@ type OrderQueue interface {
 	AddOrderIDToQueue(orderID string)
 }
 
+// Order Сервис заказов.
 type Order struct {
 	repository Repository
 	logger     interfaces.Logger
 	orderQueue OrderQueue
 }
 
+// UserBalance возвращает текущий баланс пользователя и общую сумму списанных бонусов.
 func (o *Order) UserBalance(ctx context.Context, userID int32) (entities.Balance, *entities.DomainError) {
 	return o.repository.UserBalanceWithWithdrawn(ctx, userID)
 }
 
+// OrdersWithdrawalsListUser возвращает список заказов пользователя,
+// по которым были выполнены списания бонусов, с учетом пагинации.
 func (o *Order) OrdersWithdrawalsListUser(
 	ctx context.Context,
 	userID int32,
@@ -68,9 +72,13 @@ func (o *Order) OrdersWithdrawalsListUser(
 }
 
 const (
+	// Тип блокировки при создании заказа списания бонусов.
 	lockTypeCreateOrderWithdraw = 100
 )
 
+// BalanceWithdraw выполняет списание бонусов с баланса пользователя
+// и создает заказ со списанной суммой.
+// Операция выполняется в рамках транзакции с блокировкой на уровне БД
 func (o *Order) BalanceWithdraw(ctx context.Context, userID int32, withdraw entities.BalanceWithdraw) *entities.DomainError {
 	withdraw.Order = strings.Trim(withdraw.Order, " ")
 
@@ -122,6 +130,9 @@ func (o *Order) BalanceWithdraw(ctx context.Context, userID int32, withdraw enti
 	return nil
 }
 
+// tryAdvisoryLock устанавливает advisory-блокировку для указанного ключа.
+// Если блокировка уже установлена другой операцией, возвращает ошибку
+// о невозможности выполнить операцию параллельно.
 func (o *Order) tryAdvisoryLock(
 	ctx context.Context,
 	tx interfaces.Tx,
@@ -161,6 +172,7 @@ func (o *Order) tryAdvisoryLock(
 	return nil
 }
 
+// OrdersListUser возвращает список заказов пользователя.
 func (o *Order) OrdersListUser(
 	ctx context.Context,
 	userID int32,
@@ -191,6 +203,8 @@ func (o *Order) OrdersListUser(
 	return orders, nil
 }
 
+// CreateOrder регистрирует новый заказ пользователя и отправляет его в очередь
+// на дальнейшую обработку.
 func (o *Order) CreateOrder(ctx context.Context, orderID string, userID int32) *entities.DomainError {
 	orderID = strings.Trim(orderID, " ")
 
@@ -211,6 +225,7 @@ func (o *Order) CreateOrder(ctx context.Context, orderID string, userID int32) *
 	return nil
 }
 
+// validateOrderID валидирует номер заказа.
 func (o *Order) validateOrderID(ctx context.Context, id string, userID int32) *entities.DomainError {
 	if !helpers.ValidateLuhn(id) {
 		return entities.NewUnprocessableEntity(nil, "неверный формат номера заказа")
@@ -232,6 +247,7 @@ func (o *Order) validateOrderID(ctx context.Context, id string, userID int32) *e
 	return nil
 }
 
+// validateWithdraw валидирует сумму для списания бонусов.
 func (o *Order) validateWithdraw(userID int32, userBalance float64, withdraw entities.BalanceWithdraw) *entities.DomainError {
 	if userBalance <= 0 {
 		if userBalance < 0 {
@@ -255,6 +271,7 @@ func (o *Order) validateWithdraw(userID int32, userBalance float64, withdraw ent
 	return nil
 }
 
+// NewOrder создает новый экземпляр сервиса заказов.
 func NewOrder(
 	repository Repository,
 	orderQueue OrderQueue,

@@ -6,6 +6,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
+// NewCountByUserID создание запроса для подсчета количества заказов по идентификатору пользователя.
 func NewCountByUserID(filter entities.OrderFilter) postgres.SelectStatement {
 	return postgres.SELECT(
 		postgres.COUNT(table.Orders.ID).AS("count"),

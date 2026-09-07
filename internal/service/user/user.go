@@ -17,19 +17,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-/*
-*
-Сервис для работы с пользователями:
-1) регистрация
-2) аутентификация
-*/
-
 type Repository interface {
 	ExistLogin(ctx context.Context, login string) (bool, *entities.DomainError)
 	CreateUser(ctx context.Context, user entities.User) (int32, *entities.DomainError)
 	FindByLogin(ctx context.Context, login string) (entities.User, *entities.DomainError)
 }
 
+// UserService Сервис пользователей
 type UserService struct {
 	repository    Repository
 	formValidator *validator.Validate
@@ -37,6 +31,7 @@ type UserService struct {
 	secretKey     string
 }
 
+// CheckJWTToken проверяет валидность JWT-токена и возвращает идентификатор пользователя.
 func (u *UserService) CheckJWTToken(token string) (int32, *entities.DomainError) {
 	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		return []byte(u.secretKey), nil
@@ -67,6 +62,7 @@ func (u *UserService) CheckJWTToken(token string) (int32, *entities.DomainError)
 	return userID, nil
 }
 
+// Login выполняет аутентификацию пользователя и возвращает JWT-токен.
 func (u *UserService) Login(ctx context.Context, loginForm forms.LoginForm) (string, *entities.DomainError) {
 	errDomain := u.validateForm(loginForm)
 	if errDomain != nil {
@@ -97,6 +93,7 @@ func (u *UserService) Login(ctx context.Context, loginForm forms.LoginForm) (str
 	return token, nil
 }
 
+// Register выполняет регистрацию пользователя и возвращает JWT-токен.
 func (u *UserService) Register(ctx context.Context, userForm forms.UserForm) (string, *entities.DomainError) {
 	errDomain := u.validateRegister(ctx, userForm)
 	if errDomain != nil {
@@ -118,6 +115,7 @@ func (u *UserService) Register(ctx context.Context, userForm forms.UserForm) (st
 	return token, nil
 }
 
+// ValidateForm выполняет валидацию формы.
 func (u *UserService) validateForm(form interface{}) *entities.DomainError {
 	err := u.formValidator.Struct(form)
 
@@ -133,6 +131,7 @@ func (u *UserService) validateForm(form interface{}) *entities.DomainError {
 	return nil
 }
 
+// ValidateRegister выполняет валидацию формы регистрации.
 func (u *UserService) validateRegister(ctx context.Context, userForm forms.UserForm) *entities.DomainError {
 	errDomain := u.validateForm(userForm)
 	if errDomain != nil {
@@ -151,6 +150,7 @@ func (u *UserService) validateRegister(ctx context.Context, userForm forms.UserF
 	return nil
 }
 
+// CheckUniqueLogin проверяет уникальность логина.
 func (u *UserService) checkUniqueLogin(ctx context.Context, login string) (bool, *entities.DomainError) {
 	exist, err := u.repository.ExistLogin(ctx, login)
 	if err != nil {
@@ -160,6 +160,7 @@ func (u *UserService) checkUniqueLogin(ctx context.Context, login string) (bool,
 	return exist, nil
 }
 
+// CreateUser создает нового пользователя.
 func (u *UserService) createUser(ctx context.Context, userForm forms.UserForm) (int32, *entities.DomainError) {
 	hashPass, err := hashPassword(userForm.Password)
 	if err != nil {
@@ -179,6 +180,7 @@ func (u *UserService) createUser(ctx context.Context, userForm forms.UserForm) (
 	return userID, nil
 }
 
+// GenerateJWTToken генерирует JWT-токен для пользователя.
 func (u *UserService) generateJWTToken(userID int32) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
@@ -191,6 +193,7 @@ func (u *UserService) generateJWTToken(userID int32) (string, error) {
 	return tokenString, err
 }
 
+// NewUserService создает новый экземпляр сервиса пользователей.
 func NewUserService(repository Repository, logger interfaces.Logger, secretKey string) *UserService {
 	service := &UserService{
 		logger:        logger,
@@ -202,6 +205,7 @@ func NewUserService(repository Repository, logger interfaces.Logger, secretKey s
 	return service
 }
 
+// HashPassword хеширует пароль.
 func hashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"github.com/samber/lo"
 )
 
+// buildOrderFilterCondition построение условия фильтрации заказов.
 func buildOrderFilterCondition(filter entities.OrderFilter) postgres.BoolExpression {
 	condition := table.Orders.UserID.EQ(postgres.Int32(filter.UserID))
 

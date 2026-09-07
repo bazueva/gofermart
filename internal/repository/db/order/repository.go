@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	// defaultTimeout таймаут для выполнения запросов к базе данных.
 	defaultTimeout = 1 * time.Second
 )
 
@@ -25,6 +26,7 @@ type repository struct {
 	errorClassifier *dbPkg.PostgresErrorClassifier
 }
 
+// UserBalanceWithWithdrawn текущий баланс пользователя и общая сумма списанных бонусов.
 func (r *repository) UserBalanceWithWithdrawn(ctx context.Context, userID int32) (entities.Balance, *entities.DomainError) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -49,6 +51,7 @@ func (r *repository) UserBalanceWithWithdrawn(ctx context.Context, userID int32)
 	}, nil
 }
 
+// CreateOrderWithWithdraw создает заказ со списанием бонусов.
 func (r *repository) CreateOrderWithWithdraw(ctx context.Context, userID int32, orderID string, bonusSum float64) *entities.DomainError {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -69,6 +72,7 @@ func (r *repository) CreateOrderWithWithdraw(ctx context.Context, userID int32, 
 	return nil
 }
 
+// Executor возвращает интерфейс для выполнения запросов к базе данных.
 func (r *repository) executor(ctx context.Context) interfaces.Executor {
 	if tx, ok := dbPkg.TxFromContext(ctx); ok {
 		return tx
@@ -77,6 +81,7 @@ func (r *repository) executor(ctx context.Context) interfaces.Executor {
 	return r.db
 }
 
+// UserBalance текущий баланс пользователя.
 func (r *repository) UserBalance(ctx context.Context, userID int32) (float64, *entities.DomainError) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -97,6 +102,7 @@ func (r *repository) UserBalance(ctx context.Context, userID int32) (float64, *e
 	return result.Sum, nil
 }
 
+// FindStaleOrders идентификаторы заказов, требующих повторной обработки
 func (r *repository) FindStaleOrders(ctx context.Context, statuses []entities.OrderStatus, limit int64) ([]string, *entities.DomainError) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -116,6 +122,7 @@ func (r *repository) FindStaleOrders(ctx context.Context, statuses []entities.Or
 	}), nil
 }
 
+// UpdateStatusAndBonus обновляет статус заказа и бонусы.
 func (r *repository) UpdateStatusAndBonus(
 	ctx context.Context,
 	order entities.Order,
@@ -138,6 +145,7 @@ func (r *repository) UpdateStatusAndBonus(
 	return nil
 }
 
+// CountOrdersByUserID количество заказов пользователя.
 func (r *repository) CountOrdersByUserID(ctx context.Context, filter entities.OrderFilter) (int32, *entities.DomainError) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -157,6 +165,7 @@ func (r *repository) CountOrdersByUserID(ctx context.Context, filter entities.Or
 	return result.Count, nil
 }
 
+// FindByUserID список заказов пользователя.
 func (r *repository) FindByUserID(
 	ctx context.Context,
 	filter entities.OrderFilter,
@@ -195,6 +204,7 @@ func (r *repository) FindByUserID(
 	}), nil
 }
 
+// CreateOrder создание заказа.
 func (r *repository) CreateOrder(ctx context.Context, orderID string, userID int32, status entities.OrderStatus) *entities.DomainError {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -213,6 +223,7 @@ func (r *repository) CreateOrder(ctx context.Context, orderID string, userID int
 	return nil
 }
 
+// FindByOrderID поиск заказа по идентификатору.
 func (r *repository) FindByOrderID(ctx context.Context, orderID string) (*entities.Order, *entities.DomainError) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -240,10 +251,12 @@ func (r *repository) FindByOrderID(ctx context.Context, orderID string) (*entiti
 	}, nil
 }
 
+// BeginTransaction начало транзакции.
 func (r *repository) BeginTransaction(ctx context.Context) (interfaces.Tx, error) {
 	return r.db.BeginTx(ctx, nil)
 }
 
+// NewRepository создание репозитория для работы с заказами.
 func NewRepository(db interfaces.DB, logger interfaces.Logger) *repository {
 	return &repository{
 		db:              db,
